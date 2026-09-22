@@ -1,0 +1,324 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { EarthquakeEvent } from "@indoquake/shared";
+import {
+  DEFAULT_VELOCITY_MODEL,
+  describeMmi,
+  estimateArrival,
+  estimateMmi,
+  parseMmiString,
+} from "@indoquake/earthquake";
+import { formatDurationId } from "@indoquake/geo";
+import type { DistanceInfo } from "@/lib/distances";
+import { formatCountdown, formatWibTime } from "@/lib/format-time";
+import { formatMagnitude, magnitudeColor } from "@/lib/magnitude";
+import type { ReplayState } from "@/lib/replay";
+
+interface EtaPanelProps {
+  event: EarthquakeEvent | null;
+  distance: DistanceInfo | null;
+  serverNow: () => number;
+  replay: ReplayState | null;
+  onToggleReplay: () => void;
+  showFelt: boolean;
+  onToggleFelt: () => void;
+  feltResolved: number;
+  feltPending: number;
+  feltRadiusKm: number | null;
+  feltRadiusSource: "bmkg" | "estimate" | null;
+}
+
+export function EtaPanel({
+  event,
+  distance,
+  serverNow,
+  replay,
+  onToggleReplay,
+  showFelt,
+  onToggleFelt,
+  feltResolved,
+  feltPending,
+  feltRadiusKm,
+  feltRadiusSource,
+}: EtaPanelProps) {
+  const [, setTick] = useState(0);
+  const [replayStatus, setReplayStatus] = useState<string | null>(null);
+
+  const hypocentralKm = distance?.hypocentralKm ?? null;
+  const pArrivalQuakeSeconds =
+    hypocentralKm === null
+      ? null
+      : hypocentralKm / DEFAULT_VELOCITY_MODEL.pVelocityKmS;
+  const sArrivalQuakeSeconds =
+    hypocentralKm === null
+      ? null
+      : hypocentralKm / DEFAULT_VELOCITY_MODEL.sVelocityKmS;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTick((current) => current + 1);
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (
+      !replay ||
+      pArrivalQuakeSeconds === null ||
+      sArrivalQuakeSeconds === null
+    ) {
+      return;
+    }
+    const update = () => {
+      const elapsedQuakeSeconds =
+        ((Date.now() - replay.startedAtMs) / 1000) * replay.speed;
+      if (elapsedQuakeSeconds >= sArrivalQuakeSeconds) {
+        setReplayStatus("Gelombang S (estimasi) telah melewati lokasi Anda.");
+      } else if (elapsedQuakeSeconds >= pArrivalQuakeSeconds) {
+        setReplayStatus(
+          "Gelombang P (estimasi) melewati lokasi Anda — guncangan kuat menyusul.",
+        );
+      } else {
+        setReplayStatus(
+          `Gelombang menjalar… t ≈ ${Math.round(elapsedQuakeSeconds)} dtk`,
+        );
+      }
+    };
+    const timer = window.setInterval(update, 500);
+    return () => window.clearInterval(timer);
+  }, [replay, pArrivalQuakeSeconds, sArrivalQuakeSeconds]);
+
+  if (!event) return null;
+
+  if (!distance) {
+    return (
+      <div className="border-b border-border bg-surface-2 px-4 py-3">
+        <h2 className="text-xs font-semibold tracking-wide text-foreground">
+          ESTIMASI WAKTU TIBA
+        </h2>
+        <p className="mt-1 text-[11px] text-muted">
+          Aktifkan lokasi (GPS atau manual) untuk melihat perkiraan waktu tiba
+          guncangan di lokasi Anda.
+        </p>
+      </div>
+    );
+  }
+
+  const estimate = estimateArrival({
+    originTimeUtc: event.eventTimeUtc,
+    hypocentralKm: distance.hypocentralKm,
+    model: DEFAULT_VELOCITY_MODEL,
+    nowUtc: new Date(serverNow()).toISOString(),
+  });
+
+  const arrived = estimate.secondsUntilS <= 0;
+  const mmi = describeMmi(estimateMmi(event.magnitude, distance.hypocentralKm));
+  const feltReports = [...(event.feltReports ?? [])].sort((a, b) => {
+    const aMax = parseMmiString(a.mmi)?.max ?? 0;
+    const bMax = parseMmiString(b.mmi)?.max ?? 0;
+    return bMax - aMax;
+  });
+
+  return (
+    <div className="border-b border-border bg-surface-2 px-4 py-3">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
+          ESTIMASI WAKTU TIBA
+          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+            ESTIMASI
+          </span>
+        </h2>
+        <button
+          type="button"
+          onClick={onToggleReplay}
+          className={
+            replay
+              ? "rounded-md border border-red-400/60 px-2.5 py-1 text-[11px] text-red-400 hover:bg-red-500/10"
+              : "rounded-md border border-border px-2.5 py-1 text-[11px] text-muted hover:border-accent hover:text-accent"
+          }
+        >
+          {replay ? "■ Hentikan replay" : "▶ Replay kejadian"}
+        </button>
+      </div>
+
+      <div className="mt-2 flex items-center gap-2">
+        <span
+          className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-[#0b0f14]"
+          style={{ backgroundColor: magnitudeColor(event.magnitude) }}
+        >
+          M{formatMagnitude(event.magnitude)}
+        </span>
+        <span className="line-clamp-1 text-xs text-foreground">
+          {event.regionName}
+        </span>
+      </div>
+
+      <div className="mt-3 rounded-md border border-border bg-background px-3 py-3 text-center">
+        {arrived ? (
+          <>
+            <p className="text-[11px] uppercase tracking-wide text-muted">
+              Perkiraan gelombang S
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              Sudah tiba
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted">
+              Kejadian sudah lewat — waktu tiba di bawah adalah rekonstruksi
+              estimasi. Coba ▶ Replay untuk melihat rambatan gelombang.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[11px] uppercase tracking-wide text-muted">
+              Perkiraan tiba gelombang S
+            </p>
+            <p className="mt-1 font-mono text-3xl font-semibold text-accent">
+              {formatCountdown(estimate.secondsUntilS)}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted">
+              rentang {formatWibTime(estimate.sArrivalEarliestUtc)} –{" "}
+              {formatWibTime(estimate.sArrivalLatestUtc)}
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="mt-2 rounded-md border border-border bg-background px-3 py-2">
+        <p className="flex items-center gap-2 text-[11px] text-muted">
+          Estimasi intensitas di lokasi Anda
+          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+            ESTIMASI
+          </span>
+        </p>
+        <p className="mt-1 text-sm text-foreground">
+          <span className="font-semibold">MMI {mmi.roman}</span> — {mmi.label}
+        </p>
+        <p className="mt-0.5 text-[10px] leading-relaxed text-muted">
+          {mmi.description}
+        </p>
+      </div>
+
+      <div className="mt-2 rounded-md border border-border bg-background px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex items-center gap-2 text-[11px] text-muted">
+            Laporan dirasakan
+            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
+              RESMI BMKG
+            </span>
+          </p>
+          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-muted">
+            <input
+              type="checkbox"
+              checked={showFelt}
+              onChange={onToggleFelt}
+              className="h-3 w-3 accent-[#38bdf8]"
+            />
+            Tampilkan di peta
+          </label>
+        </div>
+        {feltReports.length > 0 ? (
+          <>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {feltReports.map((report, index) => (
+                <li
+                  key={`${report.mmi}-${report.place}-${index}`}
+                  className="rounded-full border border-border px-2 py-0.5 text-[10px] text-foreground"
+                >
+                  MMI {report.mmi} · {report.place}
+                </li>
+              ))}
+            </ul>
+            {showFelt && (
+              <p className="mt-1.5 text-[10px] text-muted">
+                {feltResolved} lokasi terpetakan
+                {feltPending > 0
+                  ? ` · ${feltPending} sedang dicari…`
+                  : " (posisi perkiraan hasil pencarian nama tempat)"}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-1 text-[11px] text-muted">
+            Belum ada laporan dirasakan dari BMKG untuk kejadian ini.
+          </p>
+        )}
+      </div>
+
+      <dl className="mt-2 space-y-1 text-[11px] text-muted">
+        <div className="flex justify-between">
+          <dt>Jarak hiposentral</dt>
+          <dd className="text-foreground">
+            ≈ {Math.round(estimate.hypocentralKm)} km
+          </dd>
+        </div>
+        <div className="flex justify-between">
+          <dt>Gelombang P tiba</dt>
+          <dd className="text-foreground">
+            ≈ {formatWibTime(estimate.pArrivalUtc)}
+          </dd>
+        </div>
+        <div className="flex justify-between">
+          <dt>Gelombang S tiba</dt>
+          <dd className="text-foreground">
+            ≈ {formatWibTime(estimate.sArrivalUtc)}
+          </dd>
+        </div>
+        <div className="flex justify-between">
+          <dt>Sisa waktu peringatan</dt>
+          <dd className="text-foreground">
+            {arrived
+              ? "—"
+              : `≈ ${formatDurationId(estimate.warningSecondsRemaining)}`}
+          </dd>
+        </div>
+        <div className="flex justify-between">
+          <dt>Ketidakpastian</dt>
+          <dd className="text-foreground">
+            ± {formatDurationId(estimate.uncertaintySeconds)}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt>Perkiraan batas terasa (MMI ≥ II)</dt>
+          <dd className="text-right text-foreground">
+            {feltRadiusKm !== null ? (
+              <>
+                ≈ {Math.round(feltRadiusKm)} km{" "}
+                <span className="text-muted">
+                  ({feltRadiusSource === "bmkg" ? "dari laporan BMKG" : "estimasi model"})
+                </span>
+              </>
+            ) : (
+              <span className="text-muted">
+                — kemungkinan tidak terasa di permukaan (gempa dalam)
+              </span>
+            )}
+          </dd>
+        </div>
+      </dl>
+
+      {estimate.blindZone && (
+        <div className="mt-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2">
+          <p className="text-[11px] font-semibold text-amber-400">
+            ⚠️ BLIND ZONE MUNGKIN
+          </p>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-amber-200/90">
+            Estimasi ini mungkin memberi sedikit atau tanpa peringatan karena
+            Anda relatif dekat dengan sumber gempa.
+          </p>
+        </div>
+      )}
+
+      {replay && replayStatus && (
+        <p className="mt-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-[11px] text-accent">
+          {replayStatus}
+        </p>
+      )}
+
+      <p className="mt-2 text-[10px] leading-relaxed text-muted">
+        Perhitungan aplikasi (bukan peringatan resmi BMKG), memakai{" "}
+        {DEFAULT_VELOCITY_MODEL.name}. Selalu ikuti arahan resmi BMKG/BPBD.
+      </p>
+    </div>
+  );
+}

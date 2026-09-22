@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0f14;
+  --surface: #111823;
+  --surface-2: #16202c;
+  --border: #1f2b3a;
+  --foreground: #e5edf5;
+  --muted: #8aa0b6;
+  --accent: #38bdf8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes indoquake-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(56, 189, 248, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+  }
+}
+
+.indoquake-pulse {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 2px solid #0b0f14;
+  animation: indoquake-pulse 2s infinite;
+}
+
+.indoquake-user-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 3px solid #0b0f14;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.6);
+}
+
+.indoquake-shockwave-host {
+  background: transparent;
+  border: 0;
+}
+
+.indoquake-shockwave {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  border: 2px solid rgba(251, 191, 36, 0.85);
+  background: rgba(251, 191, 36, 0.05);
+  transform: scale(0);
+  opacity: 0;
+  animation-name: indoquake-shockwave-pulse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+@keyframes indoquake-shockwave-pulse {
+  0% {
+    transform: scale(0);
+    opacity: 0.8;
+  }
+  70% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.leaflet-container {
+  background: #0b0f14;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.leaflet-tooltip.indoquake-tooltip {
+  background: #16202c;
+  color: #e5edf5;
+  border: 1px solid #1f2b3a;
+  border-radius: 6px;
+  font-size: 11px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.leaflet-tooltip.indoquake-tooltip::before {
+  border-top-color: #1f2b3a;
+}
+
+.leaflet-control-attribution {
+  background: rgba(17, 24, 35, 0.85) !important;
+  color: #8aa0b6 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}
+
+.leaflet-bar a {
+  background: #16202c;
+  color: #e5edf5;
+  border-bottom-color: #1f2b3a;
+}
+
+.leaflet-bar a:hover {
+  background: #1f2b3a;
+}

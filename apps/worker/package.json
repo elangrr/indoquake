@@ -1,0 +1,24 @@
+{
+  "name": "@indoquake/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@indoquake/bmkg": "*",
+    "@indoquake/database": "*",
+    "@indoquake/geo": "*",
+    "@indoquake/notifications": "^0.1.0",
+    "@indoquake/regions": "^0.1.0",
+    "@indoquake/shared": "*",
+    "dotenv": "^17.4.2",
+    "ioredis": "^6.0.0",
+    "pino": "^10.3.1",
+    "tsx": "^4.23.13"
+  }
+}
