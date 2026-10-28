@@ -21,7 +21,9 @@ for (const scheme of ["light", "dark"] as const) {
     test(`E9 axe: no serious or critical violations on ${route} (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
       await open(page, route);
-      const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+      // @axe-core/playwright types come from its own playwright-core copy (newer than the
+      // pinned 1.62.1); the runtime Page is compatible, only the declared types differ.
+      const results = await new AxeBuilder({ page: page as unknown as ConstructorParameters<typeof AxeBuilder>[0]["page"] }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
       const blocking = results.violations
         .filter((violation) => violation.impact === "serious" || violation.impact === "critical")
         .map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`);
