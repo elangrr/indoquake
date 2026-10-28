@@ -13,7 +13,7 @@ ARG NEXT_PUBLIC_CARTO_API_KEY=""
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=""
 ENV NEXT_PUBLIC_CARTO_API_KEY=$NEXT_PUBLIC_CARTO_API_KEY \
     NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
-RUN npm run build -w @indoquake/web
+RUN npm run build -w @indoquake/web && mkdir -p apps/web/public
 
 FROM node:24.22.1-alpine AS runtime
 WORKDIR /app
