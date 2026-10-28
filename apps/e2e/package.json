@@ -1,0 +1,20 @@
+{
+  "name": "@indoquake/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test --project=mocked",
+    "e2e:full": "node scripts/run-full.mjs",
+    "e2e:shots": "playwright test --project=shots",
+    "e2e:serve": "node scripts/serve.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@indoquake/shared": "*",
+    "@playwright/test": "1.62.1",
+    "@types/node": "^24.13.5",
+    "typescript": "^5.9.3"
+  }
+}

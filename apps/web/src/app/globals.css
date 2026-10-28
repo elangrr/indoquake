@@ -1,65 +1,177 @@
 @import "tailwindcss";
 
+/*
+  Indoquake tokens. Seismograph paper (light) and graphite ink (dark).
+  One signal colour (vermilion) for magnitude and the active state; the rest is neutral.
+  Type scale 1.25 on 16 px: 12 / 14 / 16 / 20 / 24 / 36 (Tailwind xs, sm, base, xl, 2xl, 4xl).
+  Spacing: Tailwind 4 px steps, used as 4 / 8 / 12 / 16 / 24 / 32 / 48.
+  Radius: 2 px (controls) and 6 px (panels). Shadows: one level, for floating layers only.
+*/
 :root {
-  --background: #0b0f14;
-  --surface: #111823;
-  --surface-2: #16202c;
-  --border: #1f2b3a;
-  --foreground: #e5edf5;
-  --muted: #8aa0b6;
-  --accent: #38bdf8;
+  color-scheme: light dark;
+  --bg: light-dark(#eef0ee, #121517);
+  --surface: light-dark(#f7f8f6, #191d20);
+  --surface-2: light-dark(#e2e6e2, #23282c);
+  --rule: light-dark(#c3c9c4, #343b40);
+  --ink: light-dark(#16191b, #e6e9e7);
+  --ink-muted: light-dark(#4f575b, #9ea7ac);
+  --signal: light-dark(#b8380a, #ff7448);
+  --signal-soft: light-dark(#f6d9cc, #3a221a);
+  --danger: light-dark(#a3171b, #ff8b84);
+  --danger-soft: light-dark(#f8dcdb, #3b1b1c);
+  --ok: light-dark(#2d6a39, #82cc8f);
+  --warn: light-dark(#7d5300, #e8b64c);
+  --warn-soft: light-dark(#f5e7c4, #362b14);
+  --focus: light-dark(#0f4f8a, #7cc0ff);
+  --mag-1: light-dark(#6c7a76, #7f8e8a);
+  --mag-2: light-dark(#9a7a10, #c9a227);
+  --mag-3: light-dark(#c4610f, #e88a2e);
+  --mag-4: light-dark(#b8380a, #ff7448);
+  --mag-5: light-dark(#7e1414, #ff4a3d);
+  --shadow-float: 0 1px 2px rgb(16 20 22 / 0.12), 0 8px 24px rgb(16 20 22 / 0.18);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
-  --color-border: var(--border);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-border: var(--rule);
+  --color-foreground: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-accent: var(--signal);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --font-sans: var(--font-text), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-figures), ui-monospace, monospace;
 }
 
-html,
 body {
-  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-feature-settings: "tnum" 1;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
-@keyframes indoquake-pulse {
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 1000;
+  padding: 12px 16px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 2px;
+}
+
+.skip-link:focus {
+  top: 8px;
+}
+
+/* New-quake pulse: finite (6 s), never infinite. */
+@keyframes iq-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.65);
-  }
-  70% {
-    box-shadow: 0 0 0 18px rgba(56, 189, 248, 0);
+    background-color: var(--signal-soft);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+    background-color: transparent;
   }
 }
 
-.indoquake-pulse {
+.iq-pulse {
+  animation: iq-pulse 2s var(--ease-out) 3;
+}
+
+@keyframes iq-marker-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--signal) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 18px color-mix(in srgb, var(--signal) 0%, transparent);
+  }
+}
+
+.iq-marker-pulse {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  background: #38bdf8;
-  border: 2px solid #0b0f14;
-  animation: indoquake-pulse 2s infinite;
+  background: var(--signal);
+  border: 2px solid var(--surface);
+  animation: iq-marker-pulse 2s var(--ease-out) 3;
+}
+
+/* Intensity rings around the selected epicentre (count by magnitude class). */
+@keyframes iq-ring {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.iq-ring-host {
+  background: transparent;
+  border: 0;
+}
+
+.iq-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid var(--signal);
+  transform: scale(0.15);
+  opacity: 0;
+  animation: iq-ring 2.4s var(--ease-out) 2 both;
+  pointer-events: none;
 }
 
 .indoquake-user-dot {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  background: #38bdf8;
-  border: 3px solid #0b0f14;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.6);
+  background: var(--focus);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* Old map layers kept working with the new tokens. */
+.indoquake-pulse {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--signal);
+  border: 2px solid var(--surface);
 }
 
 .indoquake-shockwave-host {
@@ -73,24 +185,19 @@ body {
   top: 0;
   box-sizing: border-box;
   border-radius: 9999px;
-  border: 2px solid rgba(251, 191, 36, 0.85);
-  background: rgba(251, 191, 36, 0.05);
+  border: 2px solid var(--warn);
   transform: scale(0);
   opacity: 0;
   animation-name: indoquake-shockwave-pulse;
   animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation-iteration-count: 1;
   pointer-events: none;
-  will-change: transform, opacity;
 }
 
 @keyframes indoquake-shockwave-pulse {
   0% {
     transform: scale(0);
     opacity: 0.8;
-  }
-  70% {
-    opacity: 0.25;
   }
   100% {
     transform: scale(1);
@@ -99,38 +206,60 @@ body {
 }
 
 .leaflet-container {
-  background: #0b0f14;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--surface-2);
+  font-family: var(--font-sans);
 }
 
 .leaflet-tooltip.indoquake-tooltip {
-  background: #16202c;
-  color: #e5edf5;
-  border: 1px solid #1f2b3a;
-  border-radius: 6px;
-  font-size: 11px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 12px;
+  box-shadow: var(--shadow-float);
 }
 
 .leaflet-tooltip.indoquake-tooltip::before {
-  border-top-color: #1f2b3a;
+  border-top-color: var(--rule);
 }
 
-.leaflet-control-attribution {
-  background: rgba(17, 24, 35, 0.85) !important;
-  color: #8aa0b6 !important;
+.leaflet-container .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--ink-muted);
+  font-size: 12px;
 }
 
-.leaflet-control-attribution a {
-  color: #38bdf8 !important;
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--ink);
 }
 
 .leaflet-bar a {
-  background: #16202c;
-  color: #e5edf5;
-  border-bottom-color: #1f2b3a;
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom-color: var(--rule);
+  width: 44px;
+  height: 44px;
+  line-height: 44px;
 }
 
 .leaflet-bar a:hover {
-  background: #1f2b3a;
+  background: var(--surface-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    animation-name: none !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

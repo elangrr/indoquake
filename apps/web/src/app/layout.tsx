@@ -1,34 +1,76 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { LiveProvider } from "@/components/live-provider";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const textFont = localFont({
+  src: "../lib/fonts/archivo-latin-wght-normal.woff2",
+  variable: "--font-text",
+  weight: "100 900",
+  display: "swap",
+  adjustFontFallback: "Arial",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const figuresFont = localFont({
+  src: "../lib/fonts/martian-mono-latin-wght-normal.woff2",
+  variable: "--font-figures",
+  weight: "100 800",
+  display: "swap",
+  adjustFontFallback: false,
+  fallback: ["ui-monospace", "Menlo", "monospace"],
 });
 
 export const metadata: Metadata = {
-  title: "Indoquake — Monitor Gempa & Tsunami Jawa",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Indoquake · Gempa terkini Pulau Jawa",
+    template: "%s · Indoquake",
+  },
   description:
-    "Informasi gempa bumi dan tsunami terkini untuk Pulau Jawa berdasarkan data terbuka BMKG. Sumber data: BMKG.",
+    "Gempa bumi dan status tsunami terkini di Pulau Jawa dari data terbuka BMKG, diperbarui langsung.",
+  openGraph: {
+    type: "website",
+    locale: "id_ID",
+    siteName: "Indoquake",
+    title: "Indoquake · Gempa terkini Pulau Jawa",
+    description:
+      "Gempa bumi dan status tsunami terkini di Pulau Jawa dari data terbuka BMKG.",
+    url: SITE_URL,
+  },
+  icons: { icon: "/icon.svg" },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef0ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#121517" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${textFont.variable} ${figuresFont.variable} antialiased`}
+      suppressHydrationWarning
     >
-      <body className="flex h-dvh flex-col overflow-hidden">
-        <SiteHeader />
-        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="flex min-h-dvh flex-col pb-16 sm:pb-0">
+        <a href="#konten" className="skip-link">
+          Lewati ke konten utama
+        </a>
+        <LiveProvider>
+          <SiteHeader />
+          <main id="konten" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+            {children}
+          </main>
+        </LiveProvider>
         <SiteFooter />
       </body>
     </html>

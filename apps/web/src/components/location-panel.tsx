@@ -102,7 +102,7 @@ function ManualLocationForm({
   return (
     <div className="mt-2 space-y-2">
       <div>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Cari kecamatan / kelurahan / kota
           <input
             value={query}
@@ -118,10 +118,10 @@ function ManualLocationForm({
           />
         </label>
         {searching && (
-          <p className="mt-1 text-[10px] text-muted">Mencari…</p>
+          <p className="mt-1 text-xs text-muted">Mencari…</p>
         )}
         {searchError && (
-          <p className="mt-1 text-[10px] text-red-400">{searchError}</p>
+          <p className="mt-1 text-xs text-red-400">{searchError}</p>
         )}
         {results.length > 0 && (
           <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border">
@@ -143,10 +143,10 @@ function ManualLocationForm({
                   }}
                   className="w-full px-2 py-1.5 text-left hover:bg-surface-2"
                 >
-                  <span className="block text-[11px] text-foreground">
+                  <span className="block text-xs text-foreground">
                     {result.name}
                   </span>
-                  <span className="block text-[10px] text-muted">
+                  <span className="block text-xs text-muted">
                     {result.label}
                   </span>
                 </button>
@@ -154,18 +154,18 @@ function ManualLocationForm({
             ))}
           </ul>
         )}
-        <p className="mt-1 text-[10px] text-muted">
+        <p className="mt-1 text-xs text-muted">
           Pencarian wilayah: OpenStreetMap (Nominatim).
         </p>
       </div>
 
-      <p className="text-[10px] uppercase tracking-wide text-muted">
+      <p className="text-xs uppercase tracking-wide text-muted">
         atau koordinat manual
       </p>
 
       <form onSubmit={submit} className="space-y-2">
         <div className="flex gap-2">
-          <label className="flex-1 text-[11px] text-muted">
+          <label className="flex-1 text-xs text-muted">
             Lintang
             <input
               value={latitude}
@@ -175,7 +175,7 @@ function ManualLocationForm({
               className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
             />
           </label>
-          <label className="flex-1 text-[11px] text-muted">
+          <label className="flex-1 text-xs text-muted">
             Bujur
             <input
               value={longitude}
@@ -186,7 +186,7 @@ function ManualLocationForm({
             />
           </label>
         </div>
-        {formError && <p className="text-[11px] text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-red-400">{formError}</p>}
         <button
           type="submit"
           className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-accent hover:text-accent"
@@ -203,7 +203,7 @@ function ManualLocationForm({
             onClick={() =>
               onSetManual(city.latitude, city.longitude, city.label)
             }
-            className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted hover:border-accent hover:text-accent"
+            className="rounded-full border border-border px-2 py-0.5 text-xs text-muted hover:border-accent hover:text-accent"
           >
             {city.label}
           </button>
@@ -238,7 +238,7 @@ export function LocationPanel({
           <button
             type="button"
             onClick={onClear}
-            className="text-[11px] text-muted hover:text-foreground"
+            className="text-xs text-muted hover:text-foreground"
           >
             Hapus lokasi
           </button>
@@ -263,14 +263,14 @@ export function LocationPanel({
               {showManual ? "Tutup pencarian" : "Cari / Atur manual"}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          <p className="mt-2 text-xs leading-relaxed text-muted">
             Lokasi hanya dipakai di perangkat Anda untuk menghitung jarak &amp;
             estimasi. Tidak dikirim atau disimpan di server.
           </p>
           {(status === "denied" ||
             status === "unavailable" ||
             status === "error") && (
-            <p className="mt-1.5 text-[11px] text-red-400">
+            <p className="mt-1.5 text-xs text-red-400">
               {error ?? "Lokasi tidak tersedia."}
               {status === "denied" &&
                 " Aktifkan izin lokasi di pengaturan browser, atau pakai pencarian manual."}
@@ -281,13 +281,13 @@ export function LocationPanel({
       )}
 
       {status === "requesting" && (
-        <p className="mt-2 text-[11px] text-muted">Meminta izin lokasi…</p>
+        <p className="mt-2 text-xs text-muted">Meminta izin lokasi…</p>
       )}
 
       {location && (
         <div className="mt-2 space-y-2">
           <div>
-            <p className="text-[11px] text-muted">
+            <p className="text-xs text-muted">
               {location.label ? `${location.label} · ` : ""}
               {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
               {location.source === "manual"
@@ -295,7 +295,7 @@ export function LocationPanel({
                 : ` · akurasi ±${Math.round(location.accuracyM)} m`}
             </p>
             {coastDistanceKm !== null && (
-              <p className="text-[11px] text-muted">
+              <p className="text-xs text-muted">
                 Jarak ke pantai ≈{" "}
                 <span className="text-foreground">{coastDistanceKm} km</span>{" "}
                 (estimasi)
@@ -304,7 +304,7 @@ export function LocationPanel({
             <button
               type="button"
               onClick={() => setShowManual((current) => !current)}
-              className="mt-1 text-[11px] text-accent hover:underline"
+              className="mt-1 text-xs text-accent hover:underline"
             >
               {showManual ? "Tutup pencarian" : "Ubah lokasi (cari / manual)"}
             </button>
@@ -312,9 +312,9 @@ export function LocationPanel({
           </div>
 
           <div className="rounded-md border border-border bg-surface-2 px-3 py-2">
-            <p className="flex items-center gap-2 text-[11px] text-muted">
+            <p className="flex items-center gap-2 text-xs text-muted">
               Gempa terdekat
-              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
                 ESTIMASI
               </span>
             </p>
@@ -326,7 +326,7 @@ export function LocationPanel({
                   className="mt-1 flex items-center gap-2 text-left"
                 >
                   <span
-                    className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-[#0b0f14]"
+                    className="rounded px-1.5 py-0.5 text-xs font-semibold text-[#0b0f14]"
                     style={{
                       backgroundColor: magnitudeColor(nearest.event.magnitude),
                     }}
@@ -337,24 +337,24 @@ export function LocationPanel({
                     {nearest.event.regionName}
                   </span>
                 </button>
-                <p className="mt-1 text-[11px] text-muted">
+                <p className="mt-1 text-xs text-muted">
                   Jarak episentral ≈{" "}
                   {Math.round(nearest.distance.epicentralKm)} km · hiposentral ≈{" "}
                   {Math.round(nearest.distance.hypocentralKm)} km
                 </p>
-                <p className="text-[10px] text-muted">
+                <p className="text-xs text-muted">
                   Dihitung dari posisi Anda (WGS84) — nilai perkiraan.
                 </p>
               </>
             ) : (
-              <p className="mt-1 text-[11px] text-muted">
+              <p className="mt-1 text-xs text-muted">
                 Belum ada data gempa untuk dihitung.
               </p>
             )}
           </div>
 
           <div>
-            <p className="text-[11px] text-muted">Radius “Di Sekitar Saya”</p>
+            <p className="text-xs text-muted">Radius “Di Sekitar Saya”</p>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {NEAR_RADII_KM.map((radius) => (
                 <button
@@ -363,8 +363,8 @@ export function LocationPanel({
                   onClick={() => onRadiusChange(radius)}
                   className={
                     radius === radiusKm
-                      ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-[11px] text-accent"
-                      : "rounded-full border border-border px-2.5 py-1 text-[11px] text-muted hover:text-foreground"
+                      ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-xs text-accent"
+                      : "rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground"
                   }
                 >
                   {radius} km

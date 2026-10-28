@@ -17,7 +17,7 @@ export default function NotifikasiPage() {
         <SubscriptionForm />
       </div>
 
-      <p className="mt-4 text-[10px] leading-relaxed text-muted">
+      <p className="mt-4 text-xs leading-relaxed text-muted">
         Untuk peringatan resmi gempa dan tsunami, ikuti BMKG, InaTEWS, dan BPBD
         setempat.
       </p>

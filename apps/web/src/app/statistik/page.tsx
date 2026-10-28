@@ -79,7 +79,7 @@ function monthBuckets(events: EarthquakeEvent[], months = 12) {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
       <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
@@ -139,8 +139,8 @@ export default async function StatistikPage({
             href={`/statistik?period=${item.id}`}
             className={
               item.id === period.id
-                ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-[11px] text-accent"
-                : "rounded-full border border-border px-2.5 py-1 text-[11px] text-muted hover:text-foreground"
+                ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-xs text-accent"
+                : "rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground"
             }
           >
             {item.label}
@@ -259,7 +259,7 @@ export default async function StatistikPage({
                 )
                   .toISOString()
                   .slice(0, 10)}`}
-                className="flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-[11px] text-muted hover:border-accent hover:text-accent"
+                className="flex items-center gap-2 rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:border-accent hover:text-accent"
               >
                 <span className="text-foreground">{month.label}</span>
                 <span>{month.count}</span>

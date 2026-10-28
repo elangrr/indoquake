@@ -92,7 +92,7 @@ export default async function RiwayatPage({
         method="get"
         className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-border bg-surface p-3 sm:grid-cols-4"
       >
-        <label className="col-span-2 text-[11px] text-muted sm:col-span-4">
+        <label className="col-span-2 text-xs text-muted sm:col-span-4">
           Cari wilayah
           <input
             name="q"
@@ -101,7 +101,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Magnitudo min
           <input
             name="minMag"
@@ -111,7 +111,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Magnitudo maks
           <input
             name="maxMag"
@@ -121,7 +121,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Kedalaman min (km)
           <input
             name="minDepth"
@@ -131,7 +131,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Kedalaman maks (km)
           <input
             name="maxDepth"
@@ -141,7 +141,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Dari tanggal (WIB)
           <input
             type="date"
@@ -150,7 +150,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Sampai tanggal (WIB)
           <input
             type="date"
@@ -159,7 +159,7 @@ export default async function RiwayatPage({
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Provinsi
           <select
             name="province"
@@ -174,7 +174,7 @@ export default async function RiwayatPage({
             ))}
           </select>
         </label>
-        <div className="flex items-end gap-3 text-[11px] text-muted">
+        <div className="flex items-end gap-3 text-xs text-muted">
           <label className="flex items-center gap-1.5">
             <input
               type="checkbox"
@@ -212,7 +212,7 @@ export default async function RiwayatPage({
         </div>
       </form>
 
-      <p className="mt-4 text-[11px] text-muted">
+      <p className="mt-4 text-xs text-muted">
         {filtered.length.toLocaleString("id-ID")} kejadian cocok · halaman {page}{" "}
         dari {totalPages}
       </p>
@@ -227,35 +227,35 @@ export default async function RiwayatPage({
             <li key={event.eventKey} className="px-4 py-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <span
-                  className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-[#0b0f14]"
+                  className="rounded px-1.5 py-0.5 text-xs font-semibold text-[#0b0f14]"
                   style={{ backgroundColor: magnitudeColor(event.magnitude) }}
                 >
                   M{formatMagnitude(event.magnitude)}
                 </span>
-                <span className="text-[11px] text-muted">
+                <span className="text-xs text-muted">
                   {event.eventTimeWib}
                 </span>
-                <span className="text-[11px] text-muted">
+                <span className="text-xs text-muted">
                   · {event.depthKm} km
                 </span>
                 {event.provinceName && (
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted">
+                  <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted">
                     {event.provinceName}
                   </span>
                 )}
                 {event.feltText && (
-                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] text-emerald-400">
+                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs text-emerald-400">
                     Dirasakan
                   </span>
                 )}
                 {event.tsunamiPotential === true && (
-                  <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-400">
+                  <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-xs text-red-400">
                     Potensi Tsunami
                   </span>
                 )}
                 <Link
                   href={`/gempa/${event.eventKey}`}
-                  className="ml-auto text-[11px] text-accent hover:underline"
+                  className="ml-auto text-xs text-accent hover:underline"
                 >
                   Detail →
                 </Link>

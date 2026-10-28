@@ -89,7 +89,7 @@ export function BrowserNotifications() {
         <h2 className="text-sm font-semibold text-foreground">
           Notifikasi Browser
         </h2>
-        <span className="text-[11px] text-muted">
+        <span className="text-xs text-muted">
           {!supported
             ? "tidak didukung"
             : permission === "granted"
@@ -99,7 +99,7 @@ export function BrowserNotifications() {
                 : "izin belum diminta"}
         </span>
       </div>
-      <p className="mt-1 text-[11px] leading-relaxed text-muted">
+      <p className="mt-1 text-xs leading-relaxed text-muted">
         Notifikasi tampil saat tab Indoquake terbuka. Ini notifikasi aplikasi
         (data BMKG), bukan peringatan resmi.
       </p>
@@ -133,18 +133,18 @@ export function BrowserNotifications() {
           Kirim notifikasi uji
         </button>
         {message && (
-          <span className="text-[11px] text-muted">{message}</span>
+          <span className="text-xs text-muted">{message}</span>
         )}
       </div>
 
-      <p className="mt-2 text-[10px] leading-relaxed text-muted">
+      <p className="mt-2 text-xs leading-relaxed text-muted">
         Tombol uji sekaligus meminta izin bila belum diberikan. Bila browser
         menolak, atur lewat ikon gembok pada address bar. Di beberapa sistem,
         notifikasi bisa disembunyikan oleh mode “Jangan Ganggu”.
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Magnitudo minimum
           <input
             type="number"
@@ -158,7 +158,7 @@ export function BrowserNotifications() {
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Radius maksimum (km)
           <input
             type="number"
@@ -175,7 +175,7 @@ export function BrowserNotifications() {
             className={inputClass}
           />
         </label>
-        <label className="mt-5 flex items-center gap-1.5 text-[11px] text-muted">
+        <label className="mt-5 flex items-center gap-1.5 text-xs text-muted">
           <input
             type="checkbox"
             checked={settings.tsunamiOnly}
@@ -184,7 +184,7 @@ export function BrowserNotifications() {
           />
           Hanya potensi tsunami
         </label>
-        <label className="mt-5 flex items-center gap-1.5 text-[11px] text-muted">
+        <label className="mt-5 flex items-center gap-1.5 text-xs text-muted">
           <input
             type="checkbox"
             checked={settings.feltOnly}
@@ -196,13 +196,13 @@ export function BrowserNotifications() {
       </div>
 
       {settings.maxDistanceKm !== null && (
-        <p className="mt-2 text-[10px] text-muted">
+        <p className="mt-2 text-xs text-muted">
           Filter radius memakai lokasi Anda (aktifkan di beranda). Tanpa lokasi,
           notifikasi dengan filter radius tidak akan tampil.
         </p>
       )}
 
-      <p className="mt-2 text-[10px] text-muted">
+      <p className="mt-2 text-xs text-muted">
         Pengaturan disimpan di browser Anda (localStorage), tidak dikirim ke
         server.
       </p>

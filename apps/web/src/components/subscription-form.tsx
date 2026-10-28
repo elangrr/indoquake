@@ -135,7 +135,7 @@ export function SubscriptionForm() {
       <h2 className="text-sm font-semibold text-foreground">
         Langganan Telegram / Discord
       </h2>
-      <p className="mt-1 text-[11px] leading-relaxed text-muted">
+      <p className="mt-1 text-xs leading-relaxed text-muted">
         Kirim notifikasi otomatis dari server saat ada gempa baru yang cocok.
         Isi notifikasi selalu mencantumkan sumber BMKG dan menegaskan bahwa ini
         bukan peringatan resmi.
@@ -149,8 +149,8 @@ export function SubscriptionForm() {
             onClick={() => setChannel(item)}
             className={
               channel === item
-                ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-[11px] text-accent"
-                : "rounded-full border border-border px-2.5 py-1 text-[11px] text-muted hover:text-foreground"
+                ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-xs text-accent"
+                : "rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground"
             }
           >
             {item === "telegram" ? "Telegram" : "Discord"}
@@ -162,10 +162,10 @@ export function SubscriptionForm() {
         <div className="mt-3 rounded-md border border-border bg-surface-2 px-3 py-2">
           {botUsername ? (
             <>
-              <p className="text-[11px] font-medium text-foreground">
+              <p className="text-xs font-medium text-foreground">
                 Cara termudah — tanpa perlu Chat ID
               </p>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted">
+              <p className="mt-1 text-xs leading-relaxed text-muted">
                 Buka bot, lalu kirim <code>/langganan</code> (atau{" "}
                 <code>/langganan M5</code>). Langganan langsung aktif untuk chat
                 Anda.
@@ -178,13 +178,13 @@ export function SubscriptionForm() {
               >
                 Buka @{botUsername} di Telegram →
               </a>
-              <p className="mt-2 text-[10px] text-muted">
+              <p className="mt-2 text-xs text-muted">
                 Butuh Chat ID (mis. untuk ambang radius)? Kirim{" "}
                 <code>/id</code> ke bot.
               </p>
             </>
           ) : (
-            <p className="text-[11px] leading-relaxed text-amber-300">
+            <p className="text-xs leading-relaxed text-amber-300">
               Kanal Telegram belum dikonfigurasi oleh pengelola situs (bot token
               belum diisi). Silakan pakai <strong>Discord</strong> atau{" "}
               <strong>notifikasi browser</strong>.
@@ -194,7 +194,7 @@ export function SubscriptionForm() {
       )}
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="text-[11px] text-muted sm:col-span-2">
+        <label className="text-xs text-muted sm:col-span-2">
           {channel === "telegram"
             ? "Chat ID Telegram"
             : "URL Webhook Discord"}
@@ -209,7 +209,7 @@ export function SubscriptionForm() {
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Magnitudo minimum
           <input
             type="number"
@@ -221,7 +221,7 @@ export function SubscriptionForm() {
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Radius maksimum (km)
           <input
             type="number"
@@ -233,7 +233,7 @@ export function SubscriptionForm() {
             className={inputClass}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-xs text-muted">
           Provinsi (opsional)
           <select
             value={provinceSlug}
@@ -248,7 +248,7 @@ export function SubscriptionForm() {
             ))}
           </select>
         </label>
-        <div className="flex flex-col justify-end gap-1.5 text-[11px] text-muted">
+        <div className="flex flex-col justify-end gap-1.5 text-xs text-muted">
           <label className="flex items-center gap-1.5">
             <input
               type="checkbox"
@@ -304,19 +304,19 @@ export function SubscriptionForm() {
             Hapus langganan #{saved.id}
           </button>
         )}
-        {status && <span className="text-[11px] text-muted">{status}</span>}
+        {status && <span className="text-xs text-muted">{status}</span>}
       </div>
       {testResult && (
-        <p className="mt-2 text-[11px] text-foreground">{testResult}</p>
+        <p className="mt-2 text-xs text-foreground">{testResult}</p>
       )}
-      {error && <p className="mt-2 text-[11px] text-red-400">{error}</p>}
-      <p className="mt-2 text-[10px] leading-relaxed text-muted">
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      <p className="mt-2 text-xs leading-relaxed text-muted">
         Tombol uji mengirim pesan contoh (bukan gempa nyata) ke kanal di atas —
         tidak perlu menyimpan langganan lebih dulu.
       </p>
 
       {channel === "telegram" && botUsername && (
-        <p className="mt-2 text-[10px] leading-relaxed text-muted">
+        <p className="mt-2 text-xs leading-relaxed text-muted">
           Alternatif: masukkan Chat ID di atas untuk ambang radius/provinsi yang
           lebih rinci. Bot server dikonfigurasi lewat{" "}
           <code>TELEGRAM_BOT_TOKEN</code>.

@@ -93,7 +93,7 @@ export default async function EarthquakeDetailPage({
         <dl className="grid grid-cols-1 gap-px sm:grid-cols-2">
           {stats.map((stat) => (
             <div key={stat.label} className="px-4 py-3">
-              <dt className="text-[11px] uppercase tracking-wide text-muted">
+              <dt className="text-xs uppercase tracking-wide text-muted">
                 {stat.label}
               </dt>
               <dd className="mt-0.5 text-sm text-foreground">{stat.value}</dd>
@@ -130,14 +130,14 @@ export default async function EarthquakeDetailPage({
               {feltReports.map((report, index) => (
                 <li
                   key={`${report.mmi}-${report.place}-${index}`}
-                  className="rounded-full border border-border px-2 py-0.5 text-[11px] text-foreground"
+                  className="rounded-full border border-border px-2 py-0.5 text-xs text-foreground"
                 >
                   MMI {report.mmi} · {report.place}
                 </li>
               ))}
             </ul>
             {event.feltText && (
-              <p className="mt-2 text-[11px] text-muted">
+              <p className="mt-2 text-xs text-muted">
                 Teks asli BMKG: {event.feltText}
               </p>
             )}
@@ -164,7 +164,7 @@ export default async function EarthquakeDetailPage({
             href={event.shakemapUrl}
             target="_blank"
             rel="noreferrer"
-            className="mt-1 inline-block text-[11px] text-accent hover:underline"
+            className="mt-1 inline-block text-xs text-accent hover:underline"
           >
             Buka gambar asli →
           </a>
@@ -176,7 +176,7 @@ export default async function EarthquakeDetailPage({
           <h2 className="text-xs font-semibold tracking-wide text-foreground">
             RIWAYAT PERUBAHAN PARAMETER
           </h2>
-          <p className="mt-1 text-[11px] text-muted">
+          <p className="mt-1 text-xs text-muted">
             Parameter otomatis BMKG dapat berubah sampai ditinjau seismolog.
           </p>
           <ul className="mt-2 space-y-1.5">
@@ -189,7 +189,7 @@ export default async function EarthquakeDetailPage({
                   {FIELD_LABELS[revision.field] ?? revision.field}
                 </span>
                 : {revision.oldValue ?? "—"} → {revision.newValue ?? "—"}{" "}
-                <span className="text-[10px]">
+                <span className="text-xs">
                   ({formatUtc(revision.observedAt)})
                 </span>
               </li>
@@ -216,7 +216,7 @@ export default async function EarthquakeDetailPage({
         </ul>
       </section>
 
-      <p className="mt-6 text-[11px] text-muted">
+      <p className="mt-6 text-xs text-muted">
         Semua nilai pada halaman ini adalah data resmi BMKG. Estimasi aplikasi
         (jarak, perkiraan waktu tiba, perkiraan intensitas) tersedia di beranda
         setelah lokasi Anda diaktifkan, dan selalu ditandai ESTIMASI.

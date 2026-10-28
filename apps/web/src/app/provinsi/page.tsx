@@ -31,12 +31,12 @@ export default async function ProvinsiIndexPage() {
             <p className="mt-1 text-2xl font-semibold text-accent">
               {item.count}
             </p>
-            <p className="text-[11px] text-muted">kejadian tersimpan</p>
+            <p className="text-xs text-muted">kejadian tersimpan</p>
           </Link>
         ))}
       </div>
 
-      <p className="mt-4 text-[10px] leading-relaxed text-muted">
+      <p className="mt-4 text-xs leading-relaxed text-muted">
         Provinsi ditentukan dari koordinat episenter (point-in-polygon). Gempa
         lepas pantai dipetakan ke provinsi terdekat dalam radius 250 km; di luar
         itu tidak dipetakan. Batas wilayah: geoBoundaries (CC BY 4.0).
