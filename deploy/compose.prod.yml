@@ -1,0 +1,145 @@
+# Indoquake production stack (DECISIONS D1-D4, D15, D16). Run from the repo root:
+#   docker compose -f deploy/compose.prod.yml --env-file .env up -d --build
+# Only the web container is published, on 127.0.0.1:3410 for the nginx vhost. Postgres and Redis
+# sit on an internal network with no host ports. Caps of the long-running services sum to 4 CPU / 4 GiB.
+name: indoquake-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app-env: &app-env
+  DATABASE_URL: postgres://indoquake:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/indoquake
+  REDIS_URL: redis://:${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}@redis:6379
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: indoquake
+      POSTGRES_USER: indoquake
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - indoquake_prod_pgdata:/var/lib/postgresql
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indoquake -d indoquake"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 2g }
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  redis:
+    image: redis:8.10.3-alpine
+    restart: unless-stopped
+    command: ["sh", "-c", "exec redis-server --appendonly yes --maxmemory 384mb --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    volumes:
+      - indoquake_prod_redisdata:/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512m }
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  migrate:
+    build: { context: .., dockerfile: deploy/Dockerfile.worker }
+    image: indoquake-prod-worker
+    command: ["migrate"]
+    restart: "no"
+    user: "1000:1000"
+    environment: *app-env
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256m }
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  worker:
+    image: indoquake-prod-worker
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      <<: *app-env
+      BMKG_POLL_AUTOGEMPA_SECONDS: ${BMKG_POLL_AUTOGEMPA_SECONDS:-10}
+      BMKG_POLL_GEMPATERKINI_SECONDS: ${BMKG_POLL_GEMPATERKINI_SECONDS:-20}
+      BMKG_POLL_GEMPADIRASAKAN_SECONDS: ${BMKG_POLL_GEMPADIRASAKAN_SECONDS:-30}
+      RETENTION_DAYS: ${RETENTION_DAYS:-0}
+      EVENT_LOG_RETENTION_HOURS: ${EVENT_LOG_RETENTION_HOURS:-72}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    networks: [internal, egress]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512m }
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+      args:
+        NEXT_PUBLIC_CARTO_API_KEY: ${NEXT_PUBLIC_CARTO_API_KEY:-}
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${NEXT_PUBLIC_TELEGRAM_BOT_USERNAME:-}
+    image: indoquake-prod-web
+    restart: unless-stopped
+    user: "1000:1000"
+    environment:
+      <<: *app-env
+      SSE_MAX_CONNECTIONS: ${SSE_MAX_CONNECTIONS:-500}
+      SSE_MAX_PER_IP: ${SSE_MAX_PER_IP:-6}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+    ports:
+      - "127.0.0.1:3410:3000"
+    networks: [internal, egress]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits: { cpus: "1.5", memory: 1g }
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+
+networks:
+  internal:
+    internal: true
+  egress: {}
+
+volumes:
+  indoquake_prod_pgdata: {}
+  indoquake_prod_redisdata: {}

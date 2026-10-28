@@ -1,0 +1,15 @@
+# Worker (BMKG poller) and the one-shot migrator. Build context: repository root.
+#   docker build -f deploy/Dockerfile.worker -t indoquake-worker .
+#   command "migrate" applies migrations and exits; no command runs the worker.
+FROM node:24.22.1-alpine
+WORKDIR /repo
+ENV NODE_ENV=production
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/
+COPY apps/worker/package.json apps/worker/
+COPY packages ./packages
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force
+COPY apps/worker ./apps/worker
+USER node
+WORKDIR /repo/apps/worker
+ENTRYPOINT ["/repo/node_modules/.bin/tsx", "src/index.ts"]
