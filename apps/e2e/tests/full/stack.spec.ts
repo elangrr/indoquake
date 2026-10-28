@@ -2,13 +2,16 @@ import { expect, test } from "@playwright/test";
 import Redis from "ioredis";
 import { EVENT_CHANNEL, HEARTBEAT_KEY } from "@indoquake/shared";
 import { newQuake } from "../../support/fixtures";
+import { persistNewQuake } from "../../support/live-quake";
+import { watchStreamReady } from "../../support/stream-ready";
 
 // Project `full`: real web server, PostGIS and Redis started by scripts/run-full.mjs
 // (or e2e:serve + E2E_* env). Runs in the merge card; prints SKIP in the sandbox.
 const REDIS_URL = process.env.E2E_REDIS_URL;
+const DATABASE_URL = process.env.E2E_DATABASE_URL;
 const SEEDED_KEY = process.env.E2E_SEEDED_KEY;
 
-test.skip(!process.env.E2E_BASE_URL || !REDIS_URL, "full stack not running");
+test.skip(!process.env.E2E_BASE_URL || !REDIS_URL || !DATABASE_URL, "full stack not running");
 
 test("F1 server-rendered home shows seeded rows without JavaScript", async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
@@ -19,15 +22,20 @@ test("F1 server-rendered home shows seeded rows without JavaScript", async ({ br
   await context.close();
 });
 
-test("F2 an earthquake:new published on Redis appears live", async ({ page }) => {
+test("F2 a quake stored with its event_log row and woken via Redis appears live", async ({ page }) => {
+  const streamReady = await watchStreamReady(page);
   await page.goto("/");
   await expect(page.getByRole("status", { name: /^Status data:/ })).toBeVisible();
+  await streamReady();
   const redis = new Redis(REDIS_URL!);
-  const event = { ...newQuake(), eventKey: "f2f2f2f2f2f2f2f2" };
-  await page.waitForTimeout(1_000);
-  await redis.publish(EVENT_CHANNEL, JSON.stringify({ type: "earthquake:new", event, seq: 900_001 }));
-  await expect(page.locator('[data-event-key="f2f2f2f2f2f2f2f2"]')).toBeVisible({ timeout: 15_000 });
-  await redis.quit();
+  try {
+    const event = { ...newQuake(), eventKey: "f2f2f2f2f2f2f2f2" };
+    const seq = await persistNewQuake(DATABASE_URL!, event);
+    await redis.publish(EVENT_CHANNEL, JSON.stringify({ type: "earthquake:new", event, seq }));
+    await expect(page.locator('[data-event-key="f2f2f2f2f2f2f2f2"]')).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await redis.quit();
+  }
 });
 
 test("F3 a stale heartbeat in Redis shows Tertunda", async ({ page }) => {
