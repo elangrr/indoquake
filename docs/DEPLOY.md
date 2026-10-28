@@ -9,7 +9,7 @@ docker run -d --name iq-pg -e POSTGRES_USER=indoquake -e POSTGRES_PASSWORD="${DE
   -p 127.0.0.1:5432:5432 postgis/postgis:18-3.6-alpine
 docker run -d --name iq-redis -p 127.0.0.1:6379:6379 redis:8.10.3-alpine
 npm install
-# isi DATABASE_URL dan REDIS_URL di .env (lihat deploy/env.example untuk semua variabel)
+cp .env.example .env                  # lalu ganti GANTI_PASSWORD di DATABASE_URL dengan DEV_DB_PASSWORD
 npm run env:sync
 npm run migrate -w @indoquake/worker   # migrasi sekali
 npm run dev:worker                     # poller BMKG
