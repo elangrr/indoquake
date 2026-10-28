@@ -1,3 +1,5 @@
+export type FeedName = "autogempa" | "gempaterkini" | "gempadirasakan";
+
 export interface FeltReport {
   mmi: string;
   place: string;
@@ -5,8 +7,8 @@ export interface FeltReport {
 
 export interface EarthquakeEvent {
   eventKey: string;
-  eventTimeUtc: string;
-  eventTimeWib: string;
+  eventTimeUtc: string; // ISO 8601 UTC, always from Date.toISOString()
+  eventTimeWib: string; // BMKG text as received; display fallback only
   latitude: number;
   longitude: number;
   depthKm: number;
@@ -38,16 +40,80 @@ export interface EarthquakeDetail extends EarthquakeEvent {
 
 export interface EarthquakeStreamPayload {
   type: "earthquake:new" | "earthquake:updated";
-  event: EarthquakeEvent;
+  event: EarthquakeEvent; // full merged stored row, never a feed-local fragment
+  seq?: number; // event_log.id, equals the SSE id
+  changedFields?: string[]; // only for earthquake:updated
+}
+
+export type DataState = "fresh" | "stale" | "down" | "unknown";
+
+export interface DataFreshness {
+  state: DataState;
+  lastSuccessAt: string | null; // last successful autogempa poll
+  ageSeconds: number | null;
+  latestEventAt: string | null; // newest eventTimeUtc stored
+}
+
+export interface StatusPayload extends DataFreshness {
+  at: string;
+}
+
+export interface FeedHeartbeat {
+  fetched: boolean;
+  events: number;
+  error?: string;
+  lastOkAt?: string | null;
+  lastErrorAt?: string | null;
+  consecutiveFailures?: number;
+  intervalSeconds?: number;
+}
+
+export interface WorkerHeartbeat {
+  at: string;
+  ok: boolean;
+  lastSuccessAt?: string | null;
+  startedAt?: string;
+  feeds: Record<FeedName, FeedHeartbeat>;
+  totals?: { inserted: number; updated: number; unchanged: number };
 }
 
 export interface HealthResponse {
-  status: "ok" | "degraded";
+  status: "ok" | "degraded"; // degraded only when database or redis is down
   time: string;
   checks: {
     database: { ok: boolean; latencyMs: number | null; error: string | null };
     redis: { ok: boolean; error: string | null };
   };
   earthquakes: { count: number | null; latestEventAt: string | null };
-  worker: unknown;
+  worker: WorkerHeartbeat | null;
+  data?: DataFreshness;
+}
+
+export interface EarthquakeListResponse {
+  data: EarthquakeEvent[];
+  meta: {
+    count: number;
+    limit: number;
+    page?: number;
+    total?: number;
+    totalPages?: number;
+  };
+}
+
+export interface ApiError {
+  error: string; // short Indonesian message, never internal error text
+  retryAfterSeconds?: number;
+}
+
+export interface SseReadyPayload {
+  at: string;
+  lastEventId: number | null;
+}
+
+export interface SseResyncPayload {
+  reason: "gap" | "too-old" | "server-restart";
+}
+
+export interface SsePingPayload {
+  at: string;
 }
