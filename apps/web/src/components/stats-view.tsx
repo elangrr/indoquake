@@ -125,7 +125,7 @@ export function StatsView() {
   );
 }
 
-export function StatsSkeleton() {
+function StatsSkeleton() {
   return (
     <div aria-hidden="true" data-testid="stats-skeleton">
       <div className="grid grid-cols-2 border-t border-border sm:grid-cols-3 lg:grid-cols-6">

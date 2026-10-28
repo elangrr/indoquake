@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { PROVINCE_OPTIONS, provinceBySlug } from "@indoquake/regions";
-import { EventListSkeleton } from "@/components/event-list";
 import { PageHeading } from "@/components/page-heading";
 import { ProvinceEvents } from "@/components/province-events";
 
@@ -12,6 +10,9 @@ export function generateStaticParams() {
 }
 
 export const dynamicParams = false;
+// Rendered per request so the client view, which reads the URL with useSearchParams, is in the
+// server HTML (form, list skeleton) instead of a client-only Suspense fallback; see the no-JS e2e.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -36,9 +37,7 @@ export default async function ProvincePage({ params }: { params: Promise<{ slug:
         </Link>
       </nav>
       <PageHeading title={`Gempa ${province.name}`} />
-      <Suspense fallback={<EventListSkeleton />}>
-        <ProvinceEvents slug={slug} />
-      </Suspense>
+      <ProvinceEvents slug={slug} />
     </div>
   );
 }

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { PROVINCE_OPTIONS } from "@indoquake/regions";
 import { HistoryView } from "@/components/history-view";
-import { EventListSkeleton } from "@/components/event-list";
 import { PageHeading } from "@/components/page-heading";
+
+// Rendered per request so the client view, which reads the URL with useSearchParams, is in the
+// server HTML (form, list skeleton) instead of a client-only Suspense fallback; see the no-JS e2e.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Riwayat gempa",
@@ -14,9 +16,7 @@ export default function RiwayatPage() {
   return (
     <div className="mx-auto w-full max-w-screen-xl">
       <PageHeading title="Riwayat gempa" />
-      <Suspense fallback={<EventListSkeleton />}>
-        <HistoryView provinces={PROVINCE_OPTIONS} />
-      </Suspense>
+      <HistoryView provinces={PROVINCE_OPTIONS} />
     </div>
   );
 }
