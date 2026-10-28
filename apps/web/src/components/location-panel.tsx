@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { EarthquakeEvent } from "@indoquake/shared";
 import type { DistanceInfo } from "@/lib/distances";
 import type { GeocodeResult } from "@/lib/geocode";
-import { formatMagnitude, magnitudeColor } from "@/lib/magnitude";
+import { MagBadge } from "./mag-badge";
 import type { GeoStatus, UserLocation } from "@/lib/use-geolocation";
 
 export const NEAR_RADII_KM = [25, 50, 100, 250, 500] as const;
@@ -114,14 +114,14 @@ function ManualLocationForm({
               }
             }}
             placeholder="mis. Cibiru, Cipaganti, Sleman"
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
+            className="mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground"
           />
         </label>
         {searching && (
           <p className="mt-1 text-xs text-muted">Mencari…</p>
         )}
         {searchError && (
-          <p className="mt-1 text-xs text-red-400">{searchError}</p>
+          <p className="mt-1 text-xs text-danger">{searchError}</p>
         )}
         {results.length > 0 && (
           <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border">
@@ -141,7 +141,7 @@ function ManualLocationForm({
                     setResults([]);
                     setQuery("");
                   }}
-                  className="w-full px-2 py-1.5 text-left hover:bg-surface-2"
+                  className="min-h-11 w-full px-3 text-left hover:bg-surface-2"
                 >
                   <span className="block text-xs text-foreground">
                     {result.name}
@@ -172,7 +172,7 @@ function ManualLocationForm({
               onChange={(event) => setLatitude(event.target.value)}
               inputMode="decimal"
               placeholder="-6.9175"
-              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
+              className="mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground"
             />
           </label>
           <label className="flex-1 text-xs text-muted">
@@ -182,14 +182,14 @@ function ManualLocationForm({
               onChange={(event) => setLongitude(event.target.value)}
               inputMode="decimal"
               placeholder="107.6191"
-              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent"
+              className="mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground"
             />
           </label>
         </div>
-        {formError && <p className="text-xs text-red-400">{formError}</p>}
+        {formError && <p className="text-xs text-danger">{formError}</p>}
         <button
           type="submit"
-          className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-accent hover:text-accent"
+          className="min-h-11 rounded-sm border border-border px-4 text-sm text-foreground transition-colors duration-150 hover:border-foreground"
         >
           Terapkan koordinat
         </button>
@@ -203,7 +203,7 @@ function ManualLocationForm({
             onClick={() =>
               onSetManual(city.latitude, city.longitude, city.label)
             }
-            className="rounded-full border border-border px-2 py-0.5 text-xs text-muted hover:border-accent hover:text-accent"
+            className="min-h-11 rounded-sm border border-border px-3 text-sm text-muted transition-colors duration-150 hover:border-foreground hover:text-foreground"
           >
             {city.label}
           </button>
@@ -238,7 +238,7 @@ export function LocationPanel({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs text-muted hover:text-foreground"
+            className="inline-flex min-h-11 items-center text-sm text-muted underline underline-offset-4 hover:text-foreground"
           >
             Hapus lokasi
           </button>
@@ -251,14 +251,14 @@ export function LocationPanel({
             <button
               type="button"
               onClick={onRequest}
-              className="rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent hover:bg-accent/20"
+              className="inline-flex min-h-11 items-center rounded-sm bg-foreground px-4 text-sm font-medium text-background transition-colors duration-150 hover:bg-signal"
             >
               Aktifkan Lokasi (GPS)
             </button>
             <button
               type="button"
               onClick={() => setShowManual((current) => !current)}
-              className="rounded-md border border-border px-3 py-1.5 text-xs text-muted hover:text-foreground"
+              className="min-h-11 rounded-sm border border-border px-4 text-sm text-muted transition-colors duration-150 hover:text-foreground"
             >
               {showManual ? "Tutup pencarian" : "Cari / Atur manual"}
             </button>
@@ -270,7 +270,7 @@ export function LocationPanel({
           {(status === "denied" ||
             status === "unavailable" ||
             status === "error") && (
-            <p className="mt-1.5 text-xs text-red-400">
+            <p className="mt-1.5 text-xs text-danger">
               {error ?? "Lokasi tidak tersedia."}
               {status === "denied" &&
                 " Aktifkan izin lokasi di pengaturan browser, atau pakai pencarian manual."}
@@ -311,10 +311,10 @@ export function LocationPanel({
             {showManual && <ManualLocationForm onSetManual={onSetManual} />}
           </div>
 
-          <div className="rounded-md border border-border bg-surface-2 px-3 py-2">
+          <div className="rounded-sm border border-border bg-surface-2 px-3 py-2">
             <p className="flex items-center gap-2 text-xs text-muted">
               Gempa terdekat
-              <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
+              <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
                 ESTIMASI
               </span>
             </p>
@@ -325,14 +325,7 @@ export function LocationPanel({
                   onClick={() => onSelectEvent(nearest.event.eventKey)}
                   className="mt-1 flex items-center gap-2 text-left"
                 >
-                  <span
-                    className="rounded px-1.5 py-0.5 text-xs font-semibold text-[#0b0f14]"
-                    style={{
-                      backgroundColor: magnitudeColor(nearest.event.magnitude),
-                    }}
-                  >
-                    M{formatMagnitude(nearest.event.magnitude)}
-                  </span>
+                  <MagBadge magnitude={nearest.event.magnitude} />
                   <span className="line-clamp-1 text-xs text-foreground hover:underline">
                     {nearest.event.regionName}
                   </span>
@@ -343,7 +336,7 @@ export function LocationPanel({
                   {Math.round(nearest.distance.hypocentralKm)} km
                 </p>
                 <p className="text-xs text-muted">
-                  Dihitung dari posisi Anda (WGS84) — nilai perkiraan.
+                  Dihitung dari posisi Anda (WGS84), nilai perkiraan.
                 </p>
               </>
             ) : (
@@ -363,8 +356,8 @@ export function LocationPanel({
                   onClick={() => onRadiusChange(radius)}
                   className={
                     radius === radiusKm
-                      ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-xs text-accent"
-                      : "rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground"
+                      ? "min-h-11 rounded-sm border border-foreground bg-foreground px-4 text-sm text-background"
+                      : "min-h-11 rounded-sm border border-border px-4 text-sm text-muted hover:text-foreground"
                   }
                 >
                   {radius} km

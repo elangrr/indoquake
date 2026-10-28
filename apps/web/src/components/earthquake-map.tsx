@@ -320,9 +320,9 @@ export function EarthquakeMap({
         [userLocation.latitude, userLocation.longitude],
         {
           radius: userLocation.accuracyM,
-          color: "#38bdf8",
+          color: "#3b82c4",
           weight: 1,
-          fillColor: "#38bdf8",
+          fillColor: "#3b82c4",
           fillOpacity: 0.08,
           interactive: false,
         },
@@ -385,7 +385,7 @@ export function EarthquakeMap({
     const center: [number, number] = [replay.latitude, replay.longitude];
     replayEpicenterRef.current = L.circleMarker(center, {
       radius: 5,
-      color: "#0b0f14",
+      color: "#16191b",
       weight: 1,
       fillColor: "#ef4444",
       fillOpacity: 1,
@@ -393,9 +393,9 @@ export function EarthquakeMap({
     }).addTo(map);
     replayPRef.current = L.circle(center, {
       radius: 0,
-      color: "#38bdf8",
+      color: "#3b82c4",
       weight: 1.5,
-      fillColor: "#38bdf8",
+      fillColor: "#3b82c4",
       fillOpacity: 0.06,
       interactive: false,
     }).addTo(map);
@@ -441,7 +441,7 @@ export function EarthquakeMap({
       const value = parseMmiString(point.mmi)?.max ?? 3;
       const marker = L.circleMarker([point.latitude, point.longitude], {
         radius: 6,
-        color: "#0b0f14",
+        color: "#16191b",
         weight: 1,
         fillColor: mmiColor(value),
         fillOpacity: 0.85,

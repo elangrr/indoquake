@@ -1,131 +1,89 @@
 import type { EChartsCoreOption } from "echarts/core";
 
-const AXIS_COLOR = "#8aa0b6";
-const SPLIT_COLOR = "#1f2b3a";
-const TOOLTIP_BG = "#16202c";
+export interface ChartColors {
+  ink: string;
+  muted: string;
+  rule: string;
+  signal: string;
+  surface: string;
+}
 
-const BASE = {
-  backgroundColor: "transparent",
-  grid: { left: 40, right: 16, top: 24, bottom: 28 },
-  tooltip: {
+const FONT = "Martian Mono, ui-monospace, monospace";
+
+function axisText(colors: ChartColors) {
+  return { color: colors.muted, fontFamily: FONT, fontSize: 12 };
+}
+
+function tooltip(colors: ChartColors) {
+  return {
     trigger: "axis",
-    backgroundColor: TOOLTIP_BG,
-    borderColor: SPLIT_COLOR,
-    textStyle: { color: "#e5edf5", fontSize: 11 },
-  },
-};
-
-function axis(labelRotate = 0) {
-  return {
-    type: "category" as const,
-    axisLabel: { color: AXIS_COLOR, fontSize: 10, rotate: labelRotate },
-    axisLine: { lineStyle: { color: SPLIT_COLOR } },
-    axisTick: { show: false },
+    backgroundColor: colors.surface,
+    borderColor: colors.rule,
+    textStyle: { color: colors.ink, fontFamily: FONT, fontSize: 12 },
   };
 }
 
-function valueAxis() {
+/** Vertical bars: one series, signal colour on the largest bar only, the rest in ink. */
+export function columnOption(labels: string[], values: number[], colors: ChartColors): EChartsCoreOption {
+  const max = Math.max(0, ...values);
   return {
-    type: "value" as const,
-    axisLabel: { color: AXIS_COLOR, fontSize: 10 },
-    splitLine: { lineStyle: { color: SPLIT_COLOR } },
-  };
-}
-
-export function barChartOption(
-  labels: string[],
-  values: number[],
-  color: string,
-  labelRotate = 0,
-): EChartsCoreOption {
-  return {
-    ...BASE,
-    xAxis: { ...axis(labelRotate), data: labels },
-    yAxis: valueAxis(),
-    series: [
-      {
-        type: "bar" as const,
-        data: values,
-        itemStyle: { color, borderRadius: [3, 3, 0, 0] },
-        barMaxWidth: 36,
-      },
-    ],
-  };
-}
-
-export function horizontalBarChartOption(
-  labels: string[],
-  values: number[],
-  color: string,
-): EChartsCoreOption {
-  return {
-    ...BASE,
-    grid: { left: 96, right: 24, top: 12, bottom: 24 },
-    xAxis: valueAxis(),
-    yAxis: { ...axis(), data: labels, inverse: true },
-    series: [
-      {
-        type: "bar" as const,
-        data: values,
-        itemStyle: { color, borderRadius: [0, 3, 3, 0] },
-        barMaxWidth: 18,
-      },
-    ],
-  };
-}
-
-export function lineChartOption(
-  labels: string[],
-  values: number[],
-  color: string,
-): EChartsCoreOption {
-  return {
-    ...BASE,
-    xAxis: { ...axis(45), data: labels },
-    yAxis: valueAxis(),
-    series: [
-      {
-        type: "line" as const,
-        data: values,
-        smooth: true,
-        symbolSize: 5,
-        itemStyle: { color },
-        lineStyle: { color, width: 2 },
-        areaStyle: { color: "rgba(56, 189, 248, 0.12)" },
-      },
-    ],
-  };
-}
-
-export function scatterChartOption(
-  points: [number, number][],
-  color: string,
-): EChartsCoreOption {
-  return {
-    ...BASE,
-    tooltip: {
-      ...BASE.tooltip,
-      trigger: "item",
-    },
+    animation: false,
+    grid: { left: 8, right: 8, top: 16, bottom: 8, containLabel: true },
+    tooltip: tooltip(colors),
     xAxis: {
-      ...valueAxis(),
-      name: "Magnitudo",
-      nameTextStyle: { color: AXIS_COLOR, fontSize: 10 },
+      type: "category",
+      data: labels,
+      axisLine: { lineStyle: { color: colors.rule } },
+      axisTick: { show: false },
+      axisLabel: axisText(colors),
     },
     yAxis: {
-      ...valueAxis(),
-      name: "Kedalaman (km)",
-      nameTextStyle: { color: AXIS_COLOR, fontSize: 10 },
-      inverse: true,
+      type: "value",
+      minInterval: 1,
+      splitLine: { lineStyle: { color: colors.rule, type: "dashed" } },
+      axisLabel: axisText(colors),
     },
     series: [
       {
-        type: "scatter" as const,
-        name: "[magnitudo, kedalaman km]",
-        data: points,
-        symbolSize: 7,
-        itemStyle: { color, opacity: 0.75 },
+        type: "bar",
+        barMaxWidth: 24,
+        data: values.map((value) => ({
+          value,
+          itemStyle: { color: value === max && max > 0 ? colors.signal : colors.ink, opacity: value === max ? 1 : 0.7 },
+        })),
       },
     ],
   };
+}
+
+/** Horizontal bars for distributions and provinces. */
+export function rowOption(labels: string[], values: number[], colors: ChartColors): EChartsCoreOption {
+  return {
+    animation: false,
+    grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
+    tooltip: { ...tooltip(colors), axisPointer: { type: "shadow" } },
+    xAxis: {
+      type: "value",
+      minInterval: 1,
+      splitLine: { lineStyle: { color: colors.rule, type: "dashed" } },
+      axisLabel: axisText(colors),
+    },
+    yAxis: {
+      type: "category",
+      data: labels,
+      inverse: true,
+      axisLine: { lineStyle: { color: colors.rule } },
+      axisTick: { show: false },
+      axisLabel: { ...axisText(colors), color: colors.ink },
+    },
+    series: [{ type: "bar", barMaxWidth: 18, data: values, itemStyle: { color: colors.ink, opacity: 0.8 } }],
+  };
+}
+
+/** API bucket labels use typographic dashes ("2 – 3", "≥ 6"); the UI writes them in words. */
+export function bucketLabel(label: string): string {
+  return label
+    .replace(/\s*[\u2013\u2014]\s*/g, " sampai ")
+    .replace(/^\u2265\s*(.+)$/, "$1 ke atas")
+    .replace(/^<\s*(.+)$/, "di bawah $1");
 }

@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BMKG_ATTRIBUTION } from "@indoquake/shared";
+import { BMKG_ATTRIBUTION, SAFETY_DISCLAIMER } from "@indoquake/shared";
 import { parseMmiString } from "@indoquake/earthquake";
-import { getEarthquakeDetail } from "@/lib/queries";
-import { formatMagnitude, magnitudeColor } from "@/lib/magnitude";
+import { MagBadge } from "@/components/mag-badge";
+import { loadEarthquakeDetail } from "@/lib/detail";
+import { formatMagnitude } from "@/lib/magnitude";
+import { formatWibDateTime, formatWibLong } from "@/lib/wib";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,7 @@ const FIELD_LABELS: Record<string, string> = {
   depthKm: "Kedalaman",
   latitude: "Lintang",
   longitude: "Bujur",
+  eventTimeUtc: "Waktu",
   regionName: "Wilayah",
   potentialText: "Status potensi",
   feltText: "Laporan dirasakan",
@@ -19,208 +23,153 @@ const FIELD_LABELS: Record<string, string> = {
   tsunamiPotential: "Potensi tsunami",
 };
 
-function formatUtc(iso: string): string {
-  return `${iso.slice(0, 19).replace("T", " ")} UTC`;
-}
+type Params = { params: Promise<{ eventKey: string }> };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ eventKey: string }>;
-}) {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { eventKey } = await params;
-  const event = await getEarthquakeDetail(eventKey);
-  if (!event) return { title: "Gempa tidak ditemukan — Indoquake" };
+  const event = await loadEarthquakeDetail(eventKey);
+  if (!event) return { title: "Gempa tidak ditemukan" };
+  const title = `M${formatMagnitude(event.magnitude)} ${event.regionName}`;
   return {
-    title: `M${formatMagnitude(event.magnitude)} ${event.regionName} — Indoquake`,
-    description: `Gempa M${formatMagnitude(event.magnitude)} kedalaman ${event.depthKm} km, ${event.eventTimeWib}. Data resmi BMKG.`,
+    title,
+    description: `Gempa M${formatMagnitude(event.magnitude)} kedalaman ${event.depthKm} km, ${formatWibDateTime(event.eventTimeUtc)}. Sumber data: BMKG.`,
+    openGraph: { title },
   };
 }
 
-export default async function EarthquakeDetailPage({
-  params,
-}: {
-  params: Promise<{ eventKey: string }>;
-}) {
+function Section({ title, tag, children }: { title: string; tag?: "RESMI BMKG" | "ESTIMASI"; children: React.ReactNode }) {
+  return (
+    <section className="border-t border-border py-6">
+      <h2 className="flex items-center gap-3 text-base font-semibold text-foreground">
+        {title}
+        {tag && <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">{tag}</span>}
+      </h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+export default async function EarthquakeDetailPage({ params }: Params) {
   const { eventKey } = await params;
-  const event = await getEarthquakeDetail(eventKey);
+  const event = await loadEarthquakeDetail(eventKey);
   if (!event) notFound();
 
-  const feltReports = [...(event.feltReports ?? [])].sort((a, b) => {
-    const aMax = parseMmiString(a.mmi)?.max ?? 0;
-    const bMax = parseMmiString(b.mmi)?.max ?? 0;
-    return bMax - aMax;
-  });
-
-  const stats = [
+  const feltReports = [...(event.feltReports ?? [])].sort(
+    (a, b) => (parseMmiString(b.mmi)?.max ?? 0) - (parseMmiString(a.mmi)?.max ?? 0),
+  );
+  const facts = [
+    { label: "Waktu", value: formatWibLong(event.eventTimeUtc) },
+    { label: "Waktu UTC", value: `${event.eventTimeUtc.slice(0, 19).replace("T", " ")} UTC` },
     { label: "Kedalaman", value: `${event.depthKm} km` },
-    { label: "Waktu (WIB)", value: event.eventTimeWib },
-    { label: "Waktu (UTC)", value: formatUtc(event.eventTimeUtc) },
-    {
-      label: "Koordinat",
-      value: `${event.latitude.toFixed(2)}, ${event.longitude.toFixed(2)}`,
-    },
-    { label: "Wilayah", value: event.regionName },
+    { label: "Koordinat", value: `${event.latitude.toFixed(2)}, ${event.longitude.toFixed(2)}` },
+    { label: "Provinsi", value: event.provinceName ?? "Di luar Pulau Jawa" },
   ];
+  const tsunamiText =
+    event.tsunamiPotential === true
+      ? "Berpotensi tsunami. Ikuti arahan resmi BMKG dan BPBD."
+      : event.tsunamiPotential === false
+        ? "Tidak berpotensi tsunami."
+        : "Belum ada informasi potensi tsunami dari BMKG.";
 
   return (
-    <div className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-4 py-6">
-      <Link href="/" className="text-xs text-accent hover:underline">
-        ← Kembali ke peta
-      </Link>
-
-      <header className="mt-4 flex items-start gap-4">
-        <span
-          className="rounded-lg px-3 py-2 text-2xl font-bold text-[#0b0f14]"
-          style={{ backgroundColor: magnitudeColor(event.magnitude) }}
-        >
-          M{formatMagnitude(event.magnitude)}
-        </span>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">
-            {event.regionName}
-          </h1>
-          <p className="mt-1 text-xs text-muted">
-            Parameter gempa dari BMKG · {event.eventTimeWib}
-          </p>
-        </div>
+    <article className="mx-auto w-full max-w-screen-md px-4 pb-12">
+      <nav aria-label="Lokasi halaman" className="pt-6 text-sm">
+        <Link href="/" className="inline-flex min-h-11 items-center text-muted underline underline-offset-4 hover:text-foreground">
+          Beranda
+        </Link>
+      </nav>
+      <header className="pt-2 pb-6">
+        <MagBadge magnitude={event.magnitude} size="lg" />
+        <h1 className="mt-3 text-2xl leading-snug font-semibold text-foreground sm:text-4xl">{event.regionName}</h1>
+        <p className="num mt-2 text-sm text-muted">{formatWibDateTime(event.eventTimeUtc)}</p>
       </header>
 
-      <section className="mt-6 rounded-lg border border-border bg-surface">
-        <h2 className="border-b border-border px-4 py-2 text-xs font-semibold tracking-wide text-foreground">
-          DATA RESMI BMKG
-        </h2>
-        <dl className="grid grid-cols-1 gap-px sm:grid-cols-2">
-          {stats.map((stat) => (
-            <div key={stat.label} className="px-4 py-3">
-              <dt className="text-xs uppercase tracking-wide text-muted">
-                {stat.label}
-              </dt>
-              <dd className="mt-0.5 text-sm text-foreground">{stat.value}</dd>
+      <Section title="Parameter gempa" tag="RESMI BMKG">
+        <dl className="num grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          {facts.map((fact) => (
+            <div key={fact.label} className="contents">
+              <dt className="text-muted">{fact.label}</dt>
+              <dd className="text-foreground">{fact.value}</dd>
             </div>
           ))}
         </dl>
-      </section>
+      </Section>
 
-      <section className="mt-4 rounded-lg border border-border bg-surface px-4 py-3">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          STATUS TSUNAMI (RESMI BMKG)
-        </h2>
-        <p className="mt-1 text-sm text-foreground">
-          {event.tsunamiPotential === true
-            ? "Berpotensi tsunami — ikuti arahan resmi BMKG/BPBD."
-            : event.tsunamiPotential === false
-              ? "Tidak berpotensi tsunami."
-              : "Tidak ada informasi potensi tsunami pada feed ini."}
-        </p>
-        {event.potentialText && (
-          <p className="mt-1 text-xs text-muted">
-            Catatan feed: {event.potentialText}
-          </p>
-        )}
-      </section>
+      <Section title="Status tsunami" tag="RESMI BMKG">
+        <p className={`text-base ${event.tsunamiPotential ? "font-semibold text-danger" : "text-foreground"}`}>{tsunamiText}</p>
+        {event.potentialText && <p className="mt-1 text-sm text-muted">BMKG: {event.potentialText}</p>}
+        <p className="mt-4 max-w-prose text-sm text-muted">{SAFETY_DISCLAIMER}</p>
+      </Section>
 
-      <section className="mt-4 rounded-lg border border-border bg-surface px-4 py-3">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          LAPORAN DIRASAKAN (RESMI BMKG)
-        </h2>
+      <Section title="Laporan dirasakan" tag="RESMI BMKG">
         {feltReports.length > 0 ? (
-          <>
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {feltReports.map((report, index) => (
-                <li
-                  key={`${report.mmi}-${report.place}-${index}`}
-                  className="rounded-full border border-border px-2 py-0.5 text-xs text-foreground"
-                >
-                  MMI {report.mmi} · {report.place}
-                </li>
-              ))}
-            </ul>
-            {event.feltText && (
-              <p className="mt-2 text-xs text-muted">
-                Teks asli BMKG: {event.feltText}
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="mt-1 text-sm text-muted">
-            Belum ada laporan dirasakan untuk kejadian ini.
-          </p>
-        )}
-      </section>
-
-      {event.shakemapUrl && (
-        <section className="mt-4 rounded-lg border border-border bg-surface px-4 py-3">
-          <h2 className="text-xs font-semibold tracking-wide text-foreground">
-            SHAKEMAP (BMKG)
-          </h2>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={event.shakemapUrl}
-            alt={`ShakeMap BMKG untuk gempa ${event.regionName}`}
-            className="mt-2 w-full rounded border border-border"
-          />
-          <a
-            href={event.shakemapUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 inline-block text-xs text-accent hover:underline"
-          >
-            Buka gambar asli →
-          </a>
-        </section>
-      )}
-
-      {event.revisions.length > 0 && (
-        <section className="mt-4 rounded-lg border border-border bg-surface px-4 py-3">
-          <h2 className="text-xs font-semibold tracking-wide text-foreground">
-            RIWAYAT PERUBAHAN PARAMETER
-          </h2>
-          <p className="mt-1 text-xs text-muted">
-            Parameter otomatis BMKG dapat berubah sampai ditinjau seismolog.
-          </p>
-          <ul className="mt-2 space-y-1.5">
-            {event.revisions.map((revision, index) => (
-              <li
-                key={`${revision.field}-${revision.observedAt}-${index}`}
-                className="text-xs text-muted"
-              >
-                <span className="text-foreground">
-                  {FIELD_LABELS[revision.field] ?? revision.field}
-                </span>
-                : {revision.oldValue ?? "—"} → {revision.newValue ?? "—"}{" "}
-                <span className="text-xs">
-                  ({formatUtc(revision.observedAt)})
-                </span>
+          <ul className="flex flex-wrap gap-2">
+            {feltReports.map((report, index) => (
+              <li key={`${report.mmi}-${report.place}-${index}`} className="rounded-sm border border-border px-2 py-1 text-sm text-foreground">
+                <span className="num">MMI {report.mmi}</span> {report.place}
               </li>
             ))}
           </ul>
-        </section>
+        ) : event.feltText ? (
+          <p className="text-sm text-foreground">{event.feltText}</p>
+        ) : (
+          <p className="text-sm text-muted">Belum ada laporan dirasakan untuk gempa ini.</p>
+        )}
+      </Section>
+
+      {event.shakemapUrl && (
+        <Section title="ShakeMap" tag="RESMI BMKG">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={event.shakemapUrl}
+            alt={`ShakeMap BMKG untuk gempa M${formatMagnitude(event.magnitude)} ${event.regionName}`}
+            width={800}
+            height={800}
+            loading="lazy"
+            decoding="async"
+            className="aspect-square h-auto w-full rounded-sm border border-border bg-surface-2 object-contain"
+          />
+          <a href={event.shakemapUrl} rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center text-sm text-muted underline underline-offset-4 hover:text-foreground">
+            Buka gambar asli
+          </a>
+        </Section>
       )}
 
-      <section className="mt-4 rounded-lg border border-border bg-surface px-4 py-3">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          SUMBER &amp; METADATA
-        </h2>
-        <ul className="mt-1 space-y-1 text-xs text-muted">
-          <li>
-            Sumber: <span className="text-foreground">{event.source}</span> ·{" "}
-            {BMKG_ATTRIBUTION}
-          </li>
-          <li>Feed: {event.feeds.length > 0 ? event.feeds.join(", ") : "—"}</li>
-          <li>Event key: {event.eventKey}</li>
-          <li>
-            Terakhir diperbarui:{" "}
-            {event.lastUpdatedAt ? formatUtc(event.lastUpdatedAt) : "—"}
-          </li>
-        </ul>
-      </section>
+      {event.revisions.length > 0 && (
+        <Section title="Riwayat perubahan parameter">
+          <div className="overflow-x-auto">
+            <table className="num w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted">
+                  <th scope="col" className="py-1 pr-4 font-medium">Parameter</th>
+                  <th scope="col" className="py-1 pr-4 font-medium">Sebelumnya</th>
+                  <th scope="col" className="py-1 pr-4 font-medium">Menjadi</th>
+                  <th scope="col" className="py-1 font-medium">Diamati</th>
+                </tr>
+              </thead>
+              <tbody>
+                {event.revisions.map((revision, index) => (
+                  <tr key={`${revision.field}-${revision.observedAt}-${index}`} className="border-t border-border">
+                    <td className="py-2 pr-4">{FIELD_LABELS[revision.field] ?? revision.field}</td>
+                    <td className="py-2 pr-4">{revision.oldValue ?? "kosong"}</td>
+                    <td className="py-2 pr-4">{revision.newValue ?? "kosong"}</td>
+                    <td className="py-2">{formatWibDateTime(revision.observedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Section>
+      )}
 
-      <p className="mt-6 text-xs text-muted">
-        Semua nilai pada halaman ini adalah data resmi BMKG. Estimasi aplikasi
-        (jarak, perkiraan waktu tiba, perkiraan intensitas) tersedia di beranda
-        setelah lokasi Anda diaktifkan, dan selalu ditandai ESTIMASI.
-      </p>
-    </div>
+      <Section title="Sumber">
+        <ul className="space-y-1 text-sm text-muted">
+          <li>{BMKG_ATTRIBUTION}</li>
+          <li>Feed: {event.feeds.length > 0 ? event.feeds.join(", ") : "tidak tercatat"}</li>
+          <li className="num">Kode kejadian: {event.eventKey}</li>
+          {event.lastUpdatedAt && <li>Terakhir diperbarui: {formatWibDateTime(event.lastUpdatedAt)}</li>}
+        </ul>
+      </Section>
+    </article>
   );
 }

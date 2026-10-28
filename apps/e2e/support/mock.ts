@@ -9,10 +9,14 @@ export interface ApiMock {
   listStatus?: number;
   statistics?: unknown;
   statisticsStatus?: number;
+  subscribe?: { status: number; body: unknown };
+  subscribeTest?: { status: number; body: unknown };
 }
 
 export interface ApiLog {
   list: URL[];
+  statistics: URL[];
+  posts: { path: string; body: unknown }[];
 }
 
 function json(route: Route, body: unknown, status = 200) {
@@ -21,7 +25,7 @@ function json(route: Route, body: unknown, status = 200) {
 
 /** Answers every browser call to /api/v1 so the web server needs no database. */
 export async function mockApi(page: Page, mock: ApiMock = {}): Promise<ApiLog> {
-  const log: ApiLog = { list: [] };
+  const log: ApiLog = { list: [], statistics: [], posts: [] };
   const events = mock.events ?? quakes();
   await page.route("**/api/v1/**", (route) => {
     const url = new URL(route.request().url());
@@ -48,7 +52,13 @@ export async function mockApi(page: Page, mock: ApiMock = {}): Promise<ApiLog> {
         ? json(route, { data: { ...event, feeds: ["autogempa"], revisions: [] } })
         : json(route, { error: "Gempa tidak ditemukan" }, 404);
     }
+    if (path === "/api/v1/subscriptions" || path === "/api/v1/subscriptions/test") {
+      log.posts.push({ path, body: route.request().postDataJSON() });
+      const reply = path.endsWith("/test") ? mock.subscribeTest : mock.subscribe;
+      return json(route, reply?.body ?? { error: "Tidak tersedia" }, reply?.status ?? 503);
+    }
     if (path === "/api/v1/statistics") {
+      log.statistics.push(url);
       return json(route, mock.statistics ?? { error: "Data belum bisa dimuat." }, mock.statisticsStatus ?? (mock.statistics ? 200 : 503));
     }
     if (path === "/api/v1/felt-locations") return json(route, { data: [] });

@@ -12,7 +12,7 @@ import {
 import { formatDurationId } from "@indoquake/geo";
 import type { DistanceInfo } from "@/lib/distances";
 import { formatCountdown, formatWibTime } from "@/lib/format-time";
-import { formatMagnitude, magnitudeColor } from "@/lib/magnitude";
+import { MagBadge } from "./mag-badge";
 import type { ReplayState } from "@/lib/replay";
 
 interface EtaPanelProps {
@@ -77,7 +77,7 @@ export function EtaPanel({
         setReplayStatus("Gelombang S (estimasi) telah melewati lokasi Anda.");
       } else if (elapsedQuakeSeconds >= pArrivalQuakeSeconds) {
         setReplayStatus(
-          "Gelombang P (estimasi) melewati lokasi Anda — guncangan kuat menyusul.",
+          "Gelombang P (estimasi) melewati lokasi Anda, guncangan kuat menyusul.",
         );
       } else {
         setReplayStatus(
@@ -125,7 +125,7 @@ export function EtaPanel({
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
           ESTIMASI WAKTU TIBA
-          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
+          <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
             ESTIMASI
           </span>
         </h2>
@@ -134,7 +134,7 @@ export function EtaPanel({
           onClick={onToggleReplay}
           className={
             replay
-              ? "rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-400 hover:bg-red-500/10"
+              ? "rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-danger hover:bg-danger-soft"
               : "rounded-md border border-border px-2.5 py-1 text-xs text-muted hover:border-accent hover:text-accent"
           }
         >
@@ -143,18 +143,13 @@ export function EtaPanel({
       </div>
 
       <div className="mt-2 flex items-center gap-2">
-        <span
-          className="rounded px-1.5 py-0.5 text-xs font-semibold text-[#0b0f14]"
-          style={{ backgroundColor: magnitudeColor(event.magnitude) }}
-        >
-          M{formatMagnitude(event.magnitude)}
-        </span>
+        <MagBadge magnitude={event.magnitude} />
         <span className="line-clamp-1 text-xs text-foreground">
           {event.regionName}
         </span>
       </div>
 
-      <div className="mt-3 rounded-md border border-border bg-background px-3 py-3 text-center">
+      <div className="mt-3 rounded-sm border border-border bg-surface-2 px-3 py-3 text-center">
         {arrived ? (
           <>
             <p className="text-xs uppercase tracking-wide text-muted">
@@ -164,7 +159,7 @@ export function EtaPanel({
               Sudah tiba
             </p>
             <p className="mt-0.5 text-xs text-muted">
-              Kejadian sudah lewat — waktu tiba di bawah adalah rekonstruksi
+              Kejadian sudah lewat; waktu tiba di bawah adalah rekonstruksi
               estimasi. Coba ▶ Replay untuk melihat rambatan gelombang.
             </p>
           </>
@@ -177,33 +172,33 @@ export function EtaPanel({
               {formatCountdown(estimate.secondsUntilS)}
             </p>
             <p className="mt-0.5 text-xs text-muted">
-              rentang {formatWibTime(estimate.sArrivalEarliestUtc)} –{" "}
+              rentang {formatWibTime(estimate.sArrivalEarliestUtc)} sampai{" "}
               {formatWibTime(estimate.sArrivalLatestUtc)}
             </p>
           </>
         )}
       </div>
 
-      <div className="mt-2 rounded-md border border-border bg-background px-3 py-2">
+      <div className="mt-2 rounded-sm border border-border bg-surface-2 px-3 py-2">
         <p className="flex items-center gap-2 text-xs text-muted">
           Estimasi intensitas di lokasi Anda
-          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-xs font-medium text-accent">
+          <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
             ESTIMASI
           </span>
         </p>
         <p className="mt-1 text-sm text-foreground">
-          <span className="font-semibold">MMI {mmi.roman}</span> — {mmi.label}
+          <span className="font-semibold">MMI {mmi.roman}</span>, {mmi.label}
         </p>
         <p className="mt-0.5 text-xs leading-relaxed text-muted">
           {mmi.description}
         </p>
       </div>
 
-      <div className="mt-2 rounded-md border border-border bg-background px-3 py-2">
+      <div className="mt-2 rounded-sm border border-border bg-surface-2 px-3 py-2">
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-2 text-xs text-muted">
             Laporan dirasakan
-            <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
+            <span className="rounded-sm border border-ok px-1.5 text-xs font-medium text-ok">
               RESMI BMKG
             </span>
           </p>
@@ -212,7 +207,7 @@ export function EtaPanel({
               type="checkbox"
               checked={showFelt}
               onChange={onToggleFelt}
-              className="h-3 w-3 accent-[#38bdf8]"
+              className="h-5 w-5 accent-[var(--signal)]"
             />
             Tampilkan di peta
           </label>
@@ -223,7 +218,7 @@ export function EtaPanel({
               {feltReports.map((report, index) => (
                 <li
                   key={`${report.mmi}-${report.place}-${index}`}
-                  className="rounded-full border border-border px-2 py-0.5 text-xs text-foreground"
+                  className="min-h-11 rounded-sm border border-foreground px-3 text-sm text-foreground"
                 >
                   MMI {report.mmi} · {report.place}
                 </li>
@@ -268,7 +263,7 @@ export function EtaPanel({
           <dt>Sisa waktu peringatan</dt>
           <dd className="text-foreground">
             {arrived
-              ? "—"
+              ? "tidak ada"
               : `≈ ${formatDurationId(estimate.warningSecondsRemaining)}`}
           </dd>
         </div>
@@ -290,7 +285,7 @@ export function EtaPanel({
               </>
             ) : (
               <span className="text-muted">
-                — kemungkinan tidak terasa di permukaan (gempa dalam)
+                kemungkinan tidak terasa di permukaan (gempa dalam)
               </span>
             )}
           </dd>
@@ -298,11 +293,11 @@ export function EtaPanel({
       </dl>
 
       {estimate.blindZone && (
-        <div className="mt-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2">
-          <p className="text-xs font-semibold text-amber-400">
-            ⚠️ BLIND ZONE MUNGKIN
+        <div className="mt-2 rounded-md border border-warn bg-warn-soft px-3 py-2">
+          <p className="text-xs font-semibold text-warn">
+            Mungkin di zona buta
           </p>
-          <p className="mt-0.5 text-xs leading-relaxed text-amber-200/90">
+          <p className="mt-0.5 text-xs leading-relaxed text-foreground/90">
             Estimasi ini mungkin memberi sedikit atau tanpa peringatan karena
             Anda relatif dekat dengan sumber gempa.
           </p>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PROVINCE_OPTIONS } from "@indoquake/regions";
 
 const inputClass =
-  "mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent";
+  "mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground";
 
 const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 
@@ -42,11 +42,11 @@ export function SubscriptionForm() {
       const json = (await response.json()) as { ok?: boolean; error?: string };
       setTestResult(
         response.ok && json.ok
-          ? "✅ Notifikasi uji terkirim — cek kanal Anda."
-          : `❌ ${json.error ?? "Gagal mengirim notifikasi uji."}`,
+          ? "Notifikasi uji terkirim. Cek kanal Anda."
+          : json.error ?? "Gagal mengirim notifikasi uji.",
       );
     } catch {
-      setTestResult("❌ Gagal menghubungi server.");
+      setTestResult("Gagal menghubungi server.");
     } finally {
       setTesting(false);
     }
@@ -131,15 +131,10 @@ export function SubscriptionForm() {
   };
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4">
-      <h2 className="text-sm font-semibold text-foreground">
-        Langganan Telegram / Discord
+    <section aria-labelledby="langganan-server" className="border-t border-border px-4 py-6">
+      <h2 id="langganan-server" className="text-base font-semibold text-foreground">
+        Langganan Telegram atau Discord
       </h2>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Kirim notifikasi otomatis dari server saat ada gempa baru yang cocok.
-        Isi notifikasi selalu mencantumkan sumber BMKG dan menegaskan bahwa ini
-        bukan peringatan resmi.
-      </p>
 
       <div className="mt-3 flex gap-1.5">
         {(["telegram", "discord"] as const).map((item) => (
@@ -149,8 +144,8 @@ export function SubscriptionForm() {
             onClick={() => setChannel(item)}
             className={
               channel === item
-                ? "rounded-full border border-accent bg-accent/10 px-2.5 py-1 text-xs text-accent"
-                : "rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground"
+                ? "min-h-11 rounded-sm border border-foreground bg-foreground px-4 text-sm text-background"
+                : "min-h-11 rounded-sm border border-border px-4 text-sm text-muted hover:text-foreground"
             }
           >
             {item === "telegram" ? "Telegram" : "Discord"}
@@ -159,11 +154,11 @@ export function SubscriptionForm() {
       </div>
 
       {channel === "telegram" && (
-        <div className="mt-3 rounded-md border border-border bg-surface-2 px-3 py-2">
+        <div className="mt-3 rounded-sm border border-border bg-surface-2 px-3 py-2">
           {botUsername ? (
             <>
               <p className="text-xs font-medium text-foreground">
-                Cara termudah — tanpa perlu Chat ID
+                Langganan lewat bot
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted">
                 Buka bot, lalu kirim <code>/langganan</code> (atau{" "}
@@ -176,7 +171,7 @@ export function SubscriptionForm() {
                 rel="noreferrer"
                 className="mt-2 inline-block rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent hover:bg-accent/20"
               >
-                Buka @{botUsername} di Telegram →
+                Buka @{botUsername} di Telegram
               </a>
               <p className="mt-2 text-xs text-muted">
                 Butuh Chat ID (mis. untuk ambang radius)? Kirim{" "}
@@ -184,7 +179,7 @@ export function SubscriptionForm() {
               </p>
             </>
           ) : (
-            <p className="text-xs leading-relaxed text-amber-300">
+            <p className="text-xs leading-relaxed text-warn">
               Kanal Telegram belum dikonfigurasi oleh pengelola situs (bot token
               belum diisi). Silakan pakai <strong>Discord</strong> atau{" "}
               <strong>notifikasi browser</strong>.
@@ -254,7 +249,7 @@ export function SubscriptionForm() {
               type="checkbox"
               checked={tsunamiOnly}
               onChange={(event) => setTsunamiOnly(event.target.checked)}
-              className="h-3 w-3 accent-[#38bdf8]"
+              className="h-5 w-5 accent-[var(--signal)]"
             />
             Hanya potensi tsunami
           </label>
@@ -263,7 +258,7 @@ export function SubscriptionForm() {
               type="checkbox"
               checked={feltOnly}
               onChange={(event) => setFeltOnly(event.target.checked)}
-              className="h-3 w-3 accent-[#38bdf8]"
+              className="h-5 w-5 accent-[var(--signal)]"
             />
             Hanya dirasakan
           </label>
@@ -272,7 +267,7 @@ export function SubscriptionForm() {
               type="checkbox"
               checked={useLocation}
               onChange={(event) => setUseLocation(event.target.checked)}
-              className="h-3 w-3 accent-[#38bdf8]"
+              className="h-5 w-5 accent-[var(--signal)]"
             />
             Pakai lokasi saya untuk filter radius
           </label>
@@ -283,7 +278,7 @@ export function SubscriptionForm() {
         <button
           type="button"
           onClick={() => void submit()}
-          className="rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent hover:bg-accent/20"
+          className="inline-flex min-h-11 items-center rounded-sm bg-foreground px-4 text-sm font-medium text-background transition-colors duration-150 hover:bg-signal"
         >
           Simpan langganan
         </button>
@@ -291,7 +286,7 @@ export function SubscriptionForm() {
           type="button"
           onClick={() => void sendTest()}
           disabled={testing || target.trim() === ""}
-          className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+          className="min-h-11 rounded-sm border border-border px-4 text-sm text-foreground transition-colors duration-150 hover:border-foreground disabled:cursor-not-allowed disabled:opacity-40"
         >
           {testing ? "Mengirim…" : "Kirim notifikasi uji"}
         </button>
@@ -299,27 +294,25 @@ export function SubscriptionForm() {
           <button
             type="button"
             onClick={() => void remove()}
-            className="rounded-md border border-red-400/60 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
+            className="min-h-11 rounded-sm border border-danger px-4 text-sm text-danger transition-colors duration-150 hover:bg-danger-soft"
           >
             Hapus langganan #{saved.id}
           </button>
         )}
-        {status && <span className="text-xs text-muted">{status}</span>}
+        {status && (
+          <span role="status" className="text-sm text-muted">
+            {status}
+          </span>
+        )}
       </div>
       {testResult && (
-        <p className="mt-2 text-xs text-foreground">{testResult}</p>
+        <p role="status" className="mt-2 text-sm text-foreground">
+          {testResult}
+        </p>
       )}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-      <p className="mt-2 text-xs leading-relaxed text-muted">
-        Tombol uji mengirim pesan contoh (bukan gempa nyata) ke kanal di atas —
-        tidak perlu menyimpan langganan lebih dulu.
-      </p>
-
-      {channel === "telegram" && botUsername && (
-        <p className="mt-2 text-xs leading-relaxed text-muted">
-          Alternatif: masukkan Chat ID di atas untuk ambang radius/provinsi yang
-          lebih rinci. Bot server dikonfigurasi lewat{" "}
-          <code>TELEGRAM_BOT_TOKEN</code>.
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-danger">
+          {error}
         </p>
       )}
     </section>

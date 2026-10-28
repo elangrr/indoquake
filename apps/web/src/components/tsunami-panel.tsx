@@ -25,7 +25,7 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
         <h2 className="text-xs font-semibold tracking-wide text-foreground">
           🌊 STATUS TSUNAMI
         </h2>
-        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-400">
+        <span className="rounded-sm border border-ok px-1.5 text-xs font-medium text-ok">
           SUMBER: BMKG
         </span>
       </div>
@@ -36,15 +36,15 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
             ? "mt-2 rounded-md border border-red-500/60 bg-red-950/50 px-3 py-2"
             : isNoThreat
               ? "mt-2 rounded-md border border-emerald-500/40 bg-emerald-950/30 px-3 py-2"
-              : "mt-2 rounded-md border border-border bg-background px-3 py-2"
+              : "mt-2 rounded-sm border border-border bg-surface-2 px-3 py-2"
         }
       >
         <p
           className={
             isPotential
-              ? "text-xs font-semibold text-red-300"
+              ? "text-xs font-semibold text-danger"
               : isNoThreat
-                ? "text-xs font-semibold text-emerald-300"
+                ? "text-xs font-semibold text-ok"
                 : "text-xs font-semibold text-muted"
           }
         >
@@ -65,29 +65,29 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
             </p>
           )}
           {nearCoast && (
-            <p className="mt-1 text-xs font-medium text-amber-300">
-              ⚠️ Lokasi Anda dekat pantai (≤10 km). Ikuti arahan resmi BMKG/BPBD.
+            <p className="mt-1 text-xs font-medium text-warn">
+              Lokasi Anda dekat pantai (≤10 km). Ikuti arahan resmi BMKG/BPBD.
             </p>
           )}
           <a
             href={BMKG_INATEST_URI}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 inline-block rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/10"
+            className="mt-2 inline-block rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-danger hover:bg-danger-soft"
           >
-            Informasi resmi InaTEWS BMKG →
+            Informasi resmi InaTEWS BMKG
           </a>
         </>
       )}
 
       <p className="mt-2 text-xs leading-relaxed text-muted">
-        Aplikasi tidak pernah mendeklarasikan tsunami sendiri — status di atas
+        Aplikasi tidak pernah mendeklarasikan tsunami sendiri; status di atas
         berasal dari data resmi BMKG.{" "}
         <a
           href={BMKG_INATEST_URI}
           target="_blank"
           rel="noreferrer"
-          className="text-accent hover:underline"
+          className="text-foreground underline underline-offset-4"
         >
           InaTEWS
         </a>

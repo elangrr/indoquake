@@ -11,7 +11,7 @@ import {
 import { useIsClient } from "@/lib/use-is-client";
 
 const inputClass =
-  "mt-1 w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-accent";
+  "mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground";
 
 export function BrowserNotifications() {
   const isClient = useIsClient();
@@ -42,7 +42,7 @@ export function BrowserNotifications() {
       setMessage("Notifikasi browser aktif.");
     } else {
       setMessage(
-        "Izin tidak diberikan. Buka ikon gembok di address bar → Notifikasi → Izinkan.",
+        "Izin tidak diberikan. Izinkan notifikasi lewat ikon gembok di address bar.",
       );
     }
   };
@@ -64,14 +64,14 @@ export function BrowserNotifications() {
     if (current !== "granted") {
       setMessage(
         current === "denied"
-          ? "Izin notifikasi ditolak. Buka ikon gembok di address bar → Notifikasi → Izinkan, lalu coba lagi."
+          ? "Izin notifikasi ditolak. Izinkan notifikasi lewat ikon gembok di address bar, lalu coba lagi."
           : "Izin notifikasi belum diberikan.",
       );
       return;
     }
     try {
       new window.Notification("🔔 Uji notifikasi Indoquake", {
-        body: "Ini pesan UJI — bukan gempa nyata. Kalau pesan ini muncul, notifikasi browser berfungsi.",
+        body: "Ini pesan uji, bukan gempa nyata. Kalau pesan ini muncul, notifikasi browser berfungsi.",
       });
       setMessage(
         "Perintah kirim dijalankan. Kalau tidak ada yang muncul, cek pengaturan notifikasi sistem (Windows: Mode Jangan Ganggu / Focus Assist) atau daftar situs diblokir.",
@@ -84,10 +84,10 @@ export function BrowserNotifications() {
   };
 
   return (
-    <section className="rounded-lg border border-border bg-surface p-4">
+    <section aria-labelledby="notifikasi-browser" className="border-t border-border px-4 py-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-foreground">
-          Notifikasi Browser
+        <h2 id="notifikasi-browser" className="text-base font-semibold text-foreground">
+          Notifikasi browser
         </h2>
         <span className="text-xs text-muted">
           {!supported
@@ -99,10 +99,6 @@ export function BrowserNotifications() {
                 : "izin belum diminta"}
         </span>
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-muted">
-        Notifikasi tampil saat tab Indoquake terbuka. Ini notifikasi aplikasi
-        (data BMKG), bukan peringatan resmi.
-      </p>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {settings.enabled ? (
@@ -112,7 +108,7 @@ export function BrowserNotifications() {
               update({ enabled: false });
               setMessage("Notifikasi browser dimatikan.");
             }}
-            className="rounded-md border border-red-400/60 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10"
+            className="min-h-11 rounded-sm border border-danger px-4 text-sm text-danger transition-colors duration-150 hover:bg-danger-soft"
           >
             Matikan notifikasi
           </button>
@@ -120,7 +116,7 @@ export function BrowserNotifications() {
           <button
             type="button"
             onClick={() => void enable()}
-            className="rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent hover:bg-accent/20"
+            className="inline-flex min-h-11 items-center rounded-sm bg-foreground px-4 text-sm font-medium text-background transition-colors duration-150 hover:bg-signal"
           >
             Aktifkan notifikasi
           </button>
@@ -128,7 +124,7 @@ export function BrowserNotifications() {
         <button
           type="button"
           onClick={() => void sendBrowserTest()}
-          className="rounded-md border border-border px-3 py-1.5 text-xs text-foreground hover:border-accent hover:text-accent"
+          className="min-h-11 rounded-sm border border-border px-4 text-sm text-foreground transition-colors duration-150 hover:border-foreground"
         >
           Kirim notifikasi uji
         </button>
@@ -136,12 +132,6 @@ export function BrowserNotifications() {
           <span className="text-xs text-muted">{message}</span>
         )}
       </div>
-
-      <p className="mt-2 text-xs leading-relaxed text-muted">
-        Tombol uji sekaligus meminta izin bila belum diberikan. Bila browser
-        menolak, atur lewat ikon gembok pada address bar. Di beberapa sistem,
-        notifikasi bisa disembunyikan oleh mode “Jangan Ganggu”.
-      </p>
 
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <label className="text-xs text-muted">
@@ -180,7 +170,7 @@ export function BrowserNotifications() {
             type="checkbox"
             checked={settings.tsunamiOnly}
             onChange={(event) => update({ tsunamiOnly: event.target.checked })}
-            className="h-3 w-3 accent-[#38bdf8]"
+            className="h-5 w-5 accent-[var(--signal)]"
           />
           Hanya potensi tsunami
         </label>
@@ -189,7 +179,7 @@ export function BrowserNotifications() {
             type="checkbox"
             checked={settings.feltOnly}
             onChange={(event) => update({ feltOnly: event.target.checked })}
-            className="h-3 w-3 accent-[#38bdf8]"
+            className="h-5 w-5 accent-[var(--signal)]"
           />
           Hanya dirasakan
         </label>
