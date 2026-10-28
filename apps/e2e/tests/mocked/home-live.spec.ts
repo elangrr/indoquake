@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { NEW_QUAKE_KEY, newQuake, status } from "../../support/fixtures";
-import { emit, failStream, installStreamStub, mockApi, streamUrls } from "../../support/mock";
+import { blockMapTiles, emit, failStream, installStreamStub, mockApi, streamUrls } from "../../support/mock";
 
 async function openHome(page: Page) {
-  await page.route("**/basemaps.cartocdn.com/**", (route) => route.abort());
+  await blockMapTiles(page);
   await installStreamStub(page);
   const log = await mockApi(page);
   await page.goto("/");
@@ -16,15 +16,26 @@ async function ready(page: Page, lastEventId = 120) {
 }
 
 test("E1 home shows the list, the status and the map placeholder, then the themed map", async ({ page }) => {
+  const tileHosts: string[] = [];
+  page.on("request", (request) => tileHosts.push(new URL(request.url()).host));
   await page.emulateMedia({ colorScheme: "dark" });
   await openHome(page);
   await expect(page.getByRole("heading", { name: "Gempa terkini di Pulau Jawa" })).toBeVisible();
   await expect(page.locator("[data-event-key]")).toHaveCount(8);
   await expect(page.getByRole("status", { name: /^Status data:/ })).toBeVisible();
-  await expect(page.locator(".leaflet-container")).toBeVisible({ timeout: 5_000 });
-  await expect(page.locator("img.leaflet-tile").first()).toHaveAttribute("src", /dark_all/);
+  const map = page.locator(".leaflet-container");
+  await expect(map).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator("img.leaflet-tile").first()).toHaveAttribute("src", /^https:\/\/tile\.openstreetmap\.org\/\d+\/\d+\/\d+\.png$/);
+  await expect(map).toHaveAttribute("data-tile-filter", "dark");
+  await expect(page.locator(".leaflet-tile-pane")).toHaveCSS("filter", /invert\(1\)/);
+  await expect(page.locator(".leaflet-marker-pane")).toHaveCSS("filter", "none");
+  await expect(page.locator(".leaflet-overlay-pane")).toHaveCSS("filter", "none");
+  await expect(page.locator(".leaflet-control-attribution")).toContainText("OpenStreetMap contributors");
   await page.getByRole("button", { name: "Pakai tema terang" }).click();
-  await expect(page.locator("img.leaflet-tile").first()).toHaveAttribute("src", /light_all/);
+  await expect(map).toHaveAttribute("data-tile-filter", "light");
+  await expect(page.locator(".leaflet-tile-pane")).not.toHaveCSS("filter", /invert/);
+  expect(tileHosts).toContain("tile.openstreetmap.org");
+  expect(tileHosts).not.toContain("basemaps.cartocdn.com");
 });
 
 test("E1 the page does not scroll by itself on load or when a live quake arrives", async ({ page }) => {

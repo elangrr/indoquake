@@ -37,9 +37,9 @@ Browser: daftar dan peta langsung, indikator status (Langsung / Tertunda / Terpu
 
 ## Sumber data dan ketentuan BMKG
 
-Semua parameter gempa berasal dari BMKG (Badan Meteorologi, Klimatologi, dan Geofisika) lewat https://data.bmkg.go.id/gempabumi/. BMKG meminta paling banyak 60 permintaan per menit per IP dan BMKG disebut sebagai sumber di aplikasi. Indoquake mengirim sekitar 11 permintaan per menit (batas keras 30) dan menampilkan atribusi di setiap halaman. Peta dasar: kontributor OpenStreetMap dan CARTO.
+Semua parameter gempa berasal dari BMKG (Badan Meteorologi, Klimatologi, dan Geofisika) lewat https://data.bmkg.go.id/gempabumi/. BMKG meminta paling banyak 60 permintaan per menit per IP dan BMKG disebut sebagai sumber di aplikasi. Indoquake mengirim sekitar 11 permintaan per menit (batas keras 30) dan menampilkan atribusi di setiap halaman. Peta dasar: kontributor OpenStreetMap; peta dasar CARTO hanya jika `NEXT_PUBLIC_CARTO_API_KEY` diisi saat build.
 
-Status tsunami hanya diambil dari kolom `Potensi` BMKG. Indoquake tidak pernah menyatakan tsunami sendiri. Jarak, waktu tiba dan intensitas di beranda adalah perkiraan dan ditandai ESTIMASI.
+Status tsunami hanya diambil dari kolom `Potensi` BMKG. Indoquake tidak pernah menyatakan tsunami sendiri. Jarak, waktu tiba dan intensitas di beranda adalah perkiraan dan ditandai Estimasi.
 
 ## API
 

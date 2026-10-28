@@ -70,7 +70,7 @@ export function BrowserNotifications() {
       return;
     }
     try {
-      new window.Notification("🔔 Uji notifikasi Indoquake", {
+      new window.Notification("Uji notifikasi Indoquake", {
         body: "Ini pesan uji, bukan gempa nyata. Kalau pesan ini muncul, notifikasi browser berfungsi.",
       });
       setMessage(

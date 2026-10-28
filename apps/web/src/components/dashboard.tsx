@@ -332,7 +332,7 @@ export function Dashboard({
   };
 
   return (
-    <div className="mx-auto w-full max-w-screen-2xl lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
+    <div className="mx-auto w-full max-w-screen-2xl lg:grid lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
       <p aria-live="polite" role="status" className="sr-only" data-testid="live-announcer">
         {announcement}
       </p>

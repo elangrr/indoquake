@@ -49,10 +49,12 @@ export function Seismogram({ events }: { events: EarthquakeEvent[] }) {
             );
           })}
       </svg>
-      <figcaption className="num mt-1 flex justify-between text-xs text-muted">
-        <span>24 jam lalu</span>
-        <span>{label}</span>
-        <span>Sekarang</span>
+      <figcaption className="num mt-1 text-xs text-muted">
+        <span className="flex justify-between gap-4 whitespace-nowrap">
+          <span>24 jam lalu</span>
+          <span>Sekarang</span>
+        </span>
+        <span className="mt-1 block">{label}</span>
       </figcaption>
     </figure>
   );

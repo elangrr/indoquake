@@ -2,11 +2,11 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { status } from "../../support/fixtures";
-import { emit, installStreamStub, mockApi } from "../../support/mock";
+import { blockMapTiles, emit, installStreamStub, mockApi } from "../../support/mock";
 import { statistics } from "../../support/statistics";
 
 // README screenshots (docs/screenshots). Mocked API data in the shape of the seeded e2e rows;
-// Carto tiles load from the network (set SHOTS_OFFLINE=1 to block them).
+// map tiles load from the network (set SHOTS_OFFLINE=1 to block them).
 const OUT = process.env.SHOTS_DIR ?? join(import.meta.dirname, "..", "..", "..", "..", "docs", "screenshots");
 
 const SHOTS = [
@@ -23,7 +23,7 @@ for (const shot of SHOTS) {
     mkdirSync(OUT, { recursive: true });
     await page.setViewportSize({ width: shot.width, height: shot.height });
     await page.emulateMedia({ colorScheme: shot.scheme, reducedMotion: "reduce" });
-    if (process.env.SHOTS_OFFLINE === "1") await page.route("**/basemaps.cartocdn.com/**", (route) => route.abort());
+    if (process.env.SHOTS_OFFLINE === "1") await blockMapTiles(page);
     await installStreamStub(page);
     await mockApi(page, { statistics: statistics() });
     await page.goto(shot.path);

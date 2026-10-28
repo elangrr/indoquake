@@ -23,6 +23,8 @@
   --warn: light-dark(#7d5300, #e8b64c);
   --warn-soft: light-dark(#f5e7c4, #362b14);
   --focus: light-dark(#0f4f8a, #7cc0ff);
+  --wave-p: light-dark(#2b6a9e, #7ab4e0);
+  --wave-s: var(--mag-3);
   --mag-1: light-dark(#6c7a76, #7f8e8a);
   --mag-2: light-dark(#9a7a10, #c9a227);
   --mag-3: light-dark(#c4610f, #e88a2e);
@@ -67,7 +69,8 @@ body {
   font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.5;
-  font-feature-settings: "tnum" 1;
+  /* Archivo's word space is about 0.17em (2 px at 12 px), so short labels read as one word. */
+  word-spacing: 0.08em;
 }
 
 :focus-visible {
@@ -79,6 +82,7 @@ body {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+  word-spacing: normal;
 }
 
 .skip-link {
@@ -208,6 +212,15 @@ body {
 .leaflet-container {
   background: var(--surface-2);
   font-family: var(--font-sans);
+}
+
+/* Keyless OSM tiles: tint the tile pane only, never markers or overlays. */
+.leaflet-container[data-tile-filter="light"] .leaflet-tile-pane {
+  filter: saturate(0.35) contrast(0.95);
+}
+
+.leaflet-container[data-tile-filter="dark"] .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.9) contrast(0.9);
 }
 
 .leaflet-tooltip.indoquake-tooltip {

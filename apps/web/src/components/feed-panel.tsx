@@ -15,7 +15,7 @@ export const FEED_FILTERS: { id: FeedFilter; label: string }[] = [
   { id: "m5", label: "M5+" },
   { id: "felt", label: "Dirasakan" },
   { id: "tsunami", label: "Potensi tsunami" },
-  { id: "near", label: "Di sekitar saya" },
+  { id: "near", label: "Dekat saya" },
 ];
 
 export function applyFeedFilter(

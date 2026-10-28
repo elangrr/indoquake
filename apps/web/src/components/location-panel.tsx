@@ -155,13 +155,11 @@ function ManualLocationForm({
           </ul>
         )}
         <p className="mt-1 text-xs text-muted">
-          Pencarian wilayah: OpenStreetMap (Nominatim).
+          &copy; OpenStreetMap contributors
         </p>
       </div>
 
-      <p className="text-xs uppercase tracking-wide text-muted">
-        atau koordinat manual
-      </p>
+      <p className="text-xs text-muted">Atau koordinat manual</p>
 
       <form onSubmit={submit} className="space-y-2">
         <div className="flex gap-2">
@@ -231,9 +229,7 @@ export function LocationPanel({
   return (
     <div className="border-b border-border px-4 py-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          📍 LOKASI SAYA
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Lokasi saya</h2>
         {location && (
           <button
             type="button"
@@ -314,8 +310,8 @@ export function LocationPanel({
           <div className="rounded-sm border border-border bg-surface-2 px-3 py-2">
             <p className="flex items-center gap-2 text-xs text-muted">
               Gempa terdekat
-              <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
-                ESTIMASI
+              <span className="rounded-sm border border-border px-1.5 text-xs font-medium text-muted">
+                Estimasi
               </span>
             </p>
             {nearest ? (

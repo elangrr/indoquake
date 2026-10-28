@@ -37,9 +37,9 @@ Browser: live list and map, status indicator (Langsung / Tertunda / Terputus), h
 
 ## Data source and BMKG terms
 
-All earthquake parameters come from BMKG (Badan Meteorologi, Klimatologi, dan Geofisika) through https://data.bmkg.go.id/gempabumi/. BMKG asks for at most 60 requests per minute per IP and for BMKG to be named as the source in the app. Indoquake sends about 11 requests per minute (hard cap 30) and shows the attribution on every page. Basemap tiles: OpenStreetMap contributors and CARTO.
+All earthquake parameters come from BMKG (Badan Meteorologi, Klimatologi, dan Geofisika) through https://data.bmkg.go.id/gempabumi/. BMKG asks for at most 60 requests per minute per IP and for BMKG to be named as the source in the app. Indoquake sends about 11 requests per minute (hard cap 30) and shows the attribution on every page. Basemap tiles: OpenStreetMap contributors; CARTO basemaps only when `NEXT_PUBLIC_CARTO_API_KEY` is set at build time.
 
-The tsunami status is taken only from BMKG's `Potensi` field. Indoquake never declares a tsunami itself. Distances, arrival times and intensities on the home page are estimates and are labelled ESTIMASI.
+The tsunami status is taken only from BMKG's `Potensi` field. Indoquake never declares a tsunami itself. Distances, arrival times and intensities on the home page are estimates and are labelled Estimasi.
 
 ## API
 

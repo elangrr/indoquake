@@ -1,13 +1,13 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { status } from "../../support/fixtures";
-import { emit, installStreamStub, mockApi } from "../../support/mock";
+import { blockMapTiles, emit, installStreamStub, mockApi } from "../../support/mock";
 import { statistics } from "../../support/statistics";
 
 const ROUTES = ["/", "/riwayat", "/statistik", "/provinsi", "/notifikasi", "/gempa/9c41d27a0b6e3f15"];
 
 async function open(page: Page, route: string) {
-  await page.route("**/basemaps.cartocdn.com/**", (r) => r.abort());
+  await blockMapTiles(page);
   await installStreamStub(page);
   await mockApi(page, { statistics: statistics() });
   await page.goto(route);

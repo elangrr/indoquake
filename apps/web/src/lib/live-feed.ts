@@ -111,16 +111,22 @@ export function createLiveFeed(options: LiveFeedOptions): LiveFeed {
     const next = options.createSource(target);
     source = next;
     armSilence();
+    // Highest id seen on this connection, and whether the server asked for a resync. After a
+    // resync the list is refetched, so the old id must not be resent on the next reopen.
+    let connectionSeq: number | null = null;
+    let resynced = false;
 
     next.addEventListener(SSE_EVENT_READY, (event) => {
       frame();
       attempt = 0;
       const ready = parse<SseReadyPayload>(event);
-      if (lastSeq === null && ready && typeof ready.lastEventId === "number") {
-        lastSeq = ready.lastEventId;
+      const awayTooLong = awayMs > REPLAY_WINDOW_MS;
+      if (ready && typeof ready.lastEventId === "number") {
+        connectionSeq = ready.lastEventId;
+        if (lastSeq === null || resynced || awayTooLong) lastSeq = ready.lastEventId;
       }
       options.onConnection?.("open");
-      if (awayMs > REPLAY_WINDOW_MS) options.onResync?.();
+      if (awayTooLong) options.onResync?.();
     });
     next.addEventListener(SSE_EVENT_STATUS, (event) => {
       frame();
@@ -130,6 +136,8 @@ export function createLiveFeed(options: LiveFeedOptions): LiveFeed {
     next.addEventListener(SSE_EVENT_PING, frame);
     next.addEventListener(SSE_EVENT_RESYNC, () => {
       frame();
+      resynced = true;
+      if (connectionSeq !== null) lastSeq = connectionSeq;
       options.onResync?.();
     });
     next.addEventListener(SSE_EVENT_EARTHQUAKE, (event) => {
@@ -140,6 +148,7 @@ export function createLiveFeed(options: LiveFeedOptions): LiveFeed {
       if (Number.isFinite(seq) && seq > 0) {
         if (lastSeq !== null && seq <= lastSeq) return;
         lastSeq = seq;
+        connectionSeq = seq;
       }
       options.onEarthquake(payload);
     });

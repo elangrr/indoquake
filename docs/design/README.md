@@ -19,6 +19,7 @@ Differentiator: the 24 hour seismogram strip under the latest quake, one spike p
 | `--danger` | `#a3171b` | `#ff8b84` | tsunami, down banner, errors |
 | `--warn` / `--ok` | `#7d5300` / `#2d6a39` | `#e8b64c` / `#82cc8f` | status dot |
 | `--focus` | `#0f4f8a` | `#7cc0ff` | 2 px focus outline (3:1 or more on every surface) |
+| `--wave-p` / `--wave-s` | `#2b6a9e` / `--mag-3` | `#7ab4e0` / `--mag-3` | replay P and S wave rings on the map |
 
 Values use CSS `light-dark()`: the theme follows `prefers-color-scheme`, and the header toggle sets `data-theme` on `<html>` (stored in localStorage, applied by an inline script before first paint).
 
@@ -29,14 +30,16 @@ Magnitude ramp (map markers and the tick next to every magnitude): `#7f8e8a` bel
 - Text: Archivo (variable, self-hosted from fontsource via `next/font/local`, Arial fallback with size adjust).
 - Figures: Martian Mono (variable) for magnitudes, times, counts, coordinates (`.num`).
 - Scale 1.25 on 16 px: 12, 14, 16, 20, 24, 36 (Tailwind `xs`, `sm`, `base`, `xl`, `2xl`, `4xl`). No text below 12 px.
-- Sentence case. Times always in WIB with the label, formatted from UTC with `Intl` id-ID.
+- Archivo's word space is narrow (about 0.17em), so body text adds `word-spacing: 0.08em`; `.num` resets it.
+- Sentence case everywhere, badges included (`Estimasi`, `Resmi BMKG`); no letter tracking on headings. Times always in WIB with the label, formatted from UTC with `Intl` id-ID.
 
 ## Layout
 
-- Phone first: latest quake, list, then map. From 1024 px: list column (28 rem) and a sticky map.
+- Phone first: latest quake, list, then map. From 1024 px: list column (32 rem, so the five filter chips fit one row) and a sticky map.
 - Document scroll everywhere; only the map has a fixed height.
 - Navigation: inline from 640 px, bottom bar below. Every target is at least 44 by 44 px.
 - No cards inside cards: sections are separated by rules.
+- Basemap: CARTO only when `NEXT_PUBLIC_CARTO_API_KEY` is set (keyless CARTO serves an "API key required" tile). Otherwise OpenStreetMap standard tiles with a CSS filter on `.leaflet-tile-pane` only (light: desaturated; dark: inverted and desaturated), so markers keep their colours.
 
 ## Motion
 

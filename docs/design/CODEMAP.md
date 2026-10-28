@@ -7,6 +7,8 @@
 - apps/web/src/components/live-provider.tsx: one SSE connection per tab (lib/live-feed.ts), freshness state, listeners.
 - apps/web/src/components/dashboard.tsx: home state (merge, pulse, toasts, announcer), lazy map (earthquake-map.tsx).
 - apps/web/src/components/data-status.tsx, data-banner.tsx: header status and the down banner (lib/data-status.ts).
+- apps/web/src/lib/map-tiles.ts: basemap per theme (Carto with NEXT_PUBLIC_CARTO_API_KEY, else OSM + tile-pane filter).
+- apps/web/src/lib/sentence-case.ts: sentence case for upstream labels (tsunami status).
 - apps/web/src/lib/merge-event.ts: field-wise merge of stream frames into the list.
 - apps/web/src/lib/history-query.ts: /riwayat URL params to API params; lib/wib.ts: WIB formatting and day bounds.
 - apps/web/src/lib/use-api.ts: keyed GET hook with loading, error, retry.

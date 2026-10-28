@@ -14,7 +14,8 @@ import {
   parseMmiString,
 } from "@indoquake/earthquake";
 import { MAGNITUDE_BUCKETS, magnitudeColor, ringCount } from "@/lib/magnitude";
-import { currentTheme, type ThemeChoice } from "@/lib/theme";
+import { currentTheme } from "@/lib/theme";
+import { tileSource } from "@/lib/map-tiles";
 import { prefersReducedMotion } from "@/lib/motion";
 import { mmiColor } from "@/lib/mmi-colors";
 import type { ReplayState } from "@/lib/replay";
@@ -23,16 +24,18 @@ import type { UserLocation } from "@/lib/use-geolocation";
 import "leaflet/dist/leaflet.css";
 
 const CARTO_API_KEY = process.env.NEXT_PUBLIC_CARTO_API_KEY;
-/** Carto basemap that matches the active theme: light_all on paper, dark_all on graphite. */
-export function tileUrl(theme: ThemeChoice): string {
-  const style = theme === "dark" ? "dark_all" : "light_all";
-  const base = `https://basemaps.cartocdn.com/${style}/{z}/{x}/{y}.png`;
-  return CARTO_API_KEY ? `${base}?key=${CARTO_API_KEY}` : base;
-}
-const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const JAVA_CENTER: [number, number] = [-7.3, 110.2];
 const JAVA_ZOOM = 6;
+
+/** Canvas layers need a concrete colour, so resolve a design token (light-dark()) on a probe element. */
+function tokenColor(host: HTMLElement, token: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = `var(${token})`;
+  host.appendChild(probe);
+  const color = getComputedStyle(probe).color;
+  probe.remove();
+  return color;
+}
 
 function radiusFor(magnitude: number): number {
   return Math.min(18, Math.max(4, 3 + magnitude * 2.2));
@@ -118,8 +121,10 @@ export function EarthquakeMap({
         });
         mapRef.current = map;
 
-        tileRef.current = L.tileLayer(tileUrl(currentTheme()), {
-          attribution: TILE_ATTRIBUTION,
+        const tiles = tileSource(currentTheme(), CARTO_API_KEY);
+        container.dataset.tileFilter = tiles.filter;
+        tileRef.current = L.tileLayer(tiles.url, {
+          attribution: tiles.attribution,
           maxZoom: 19,
         }).addTo(map);
 
@@ -234,7 +239,11 @@ export function EarthquakeMap({
 
   useEffect(() => {
     if (!ready) return;
-    const sync = () => tileRef.current?.setUrl(tileUrl(currentTheme()));
+    const sync = () => {
+      const tiles = tileSource(currentTheme(), CARTO_API_KEY);
+      if (containerRef.current) containerRef.current.dataset.tileFilter = tiles.filter;
+      tileRef.current?.setUrl(tiles.url);
+    };
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     window.addEventListener("indoquake:theme", sync);
     media.addEventListener("change", sync);
@@ -392,19 +401,24 @@ export function EarthquakeMap({
       fillOpacity: 1,
       interactive: false,
     }).addTo(map);
+    // Reduced motion: no growing wave rings. The ETA panel still gives the arrival times as text.
+    if (prefersReducedMotion()) return;
+    const host = map.getContainer();
+    const pColor = tokenColor(host, "--wave-p");
+    const sColor = tokenColor(host, "--wave-s");
     replayPRef.current = L.circle(center, {
       radius: 0,
-      color: "#3b82c4",
+      color: pColor,
       weight: 1.5,
-      fillColor: "#3b82c4",
+      fillColor: pColor,
       fillOpacity: 0.06,
       interactive: false,
     }).addTo(map);
     replaySRef.current = L.circle(center, {
       radius: 0,
-      color: "#f97316",
+      color: sColor,
       weight: 1.5,
-      fillColor: "#f97316",
+      fillColor: sColor,
       fillOpacity: 0.06,
       interactive: false,
     }).addTo(map);

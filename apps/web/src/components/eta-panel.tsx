@@ -94,13 +94,8 @@ export function EtaPanel({
   if (!distance) {
     return (
       <div className="border-b border-border bg-surface-2 px-4 py-3">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          ESTIMASI WAKTU TIBA
-        </h2>
-        <p className="mt-1 text-xs text-muted">
-          Aktifkan lokasi (GPS atau manual) untuk melihat perkiraan waktu tiba
-          guncangan di lokasi Anda.
-        </p>
+        <h2 className="text-sm font-semibold text-foreground">Estimasi waktu tiba</h2>
+        <p className="mt-1 text-xs text-muted">Lokasi belum diatur.</p>
       </div>
     );
   }
@@ -123,22 +118,24 @@ export function EtaPanel({
   return (
     <div className="border-b border-border bg-surface-2 px-4 py-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-foreground">
-          ESTIMASI WAKTU TIBA
-          <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
-            ESTIMASI
-          </span>
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Estimasi waktu tiba</h2>
         <button
           type="button"
           onClick={onToggleReplay}
           className={
             replay
-              ? "min-h-11 rounded-sm border border-danger px-4 text-sm text-danger transition-colors duration-150 hover:bg-danger-soft"
-              : "min-h-11 rounded-sm border border-border px-4 text-sm text-muted transition-colors duration-150 hover:border-foreground hover:text-foreground"
+              ? "inline-flex min-h-11 items-center gap-2 rounded-sm border border-danger px-4 text-sm text-danger transition-colors duration-150 hover:bg-danger-soft"
+              : "inline-flex min-h-11 items-center gap-2 rounded-sm border border-border px-4 text-sm text-muted transition-colors duration-150 hover:border-foreground hover:text-foreground"
           }
         >
-          {replay ? "■ Hentikan replay" : "▶ Replay kejadian"}
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
+            {replay ? (
+              <rect x="2" y="2" width="8" height="8" fill="currentColor" />
+            ) : (
+              <path d="M3 1.5l7.5 4.5L3 10.5z" fill="currentColor" />
+            )}
+          </svg>
+          {replay ? "Hentikan replay" : "Replay kejadian"}
         </button>
       </div>
 
@@ -152,22 +149,14 @@ export function EtaPanel({
       <div className="mt-3 rounded-sm border border-border bg-surface-2 px-3 py-3 text-center">
         {arrived ? (
           <>
-            <p className="text-xs uppercase tracking-wide text-muted">
-              Perkiraan gelombang S
-            </p>
+            <p className="text-xs text-muted">Perkiraan gelombang S</p>
             <p className="mt-1 text-sm font-semibold text-foreground">
               Sudah tiba
-            </p>
-            <p className="mt-0.5 text-xs text-muted">
-              Kejadian sudah lewat; waktu tiba di bawah adalah rekonstruksi
-              estimasi. Coba ▶ Replay untuk melihat rambatan gelombang.
             </p>
           </>
         ) : (
           <>
-            <p className="text-xs uppercase tracking-wide text-muted">
-              Perkiraan tiba gelombang S
-            </p>
+            <p className="text-xs text-muted">Perkiraan tiba gelombang S</p>
             <p className="mt-1 font-mono text-3xl font-semibold text-accent">
               {formatCountdown(estimate.secondsUntilS)}
             </p>
@@ -182,8 +171,8 @@ export function EtaPanel({
       <div className="mt-2 rounded-sm border border-border bg-surface-2 px-3 py-2">
         <p className="flex items-center gap-2 text-xs text-muted">
           Estimasi intensitas di lokasi Anda
-          <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">
-            ESTIMASI
+          <span className="rounded-sm border border-border px-1.5 text-xs font-medium text-muted">
+            Estimasi
           </span>
         </p>
         <p className="mt-1 text-sm text-foreground">
@@ -310,9 +299,8 @@ export function EtaPanel({
         </p>
       )}
 
-      <p className="mt-2 text-xs leading-relaxed text-muted">
-        Perhitungan aplikasi (bukan peringatan resmi BMKG), memakai{" "}
-        {DEFAULT_VELOCITY_MODEL.name}. Selalu ikuti arahan resmi BMKG/BPBD.
+      <p className="mt-2 text-xs text-muted">
+        Bukan peringatan resmi BMKG. Ikuti arahan BMKG dan BPBD.
       </p>
     </div>
   );

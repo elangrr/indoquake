@@ -128,3 +128,9 @@ export async function streamUrls(page: Page): Promise<string[]> {
 export async function failStream(page: Page): Promise<void> {
   await page.evaluate(() => window.__iqStream.fail());
 }
+
+/** Map tiles never reach the network in tests; both basemap hosts are answered with an abort. */
+export async function blockMapTiles(page: Page): Promise<void> {
+  await page.route("**/tile.openstreetmap.org/**", (route) => route.abort());
+  await page.route("**/basemaps.cartocdn.com/**", (route) => route.abort());
+}

@@ -144,6 +144,22 @@ describe("createLiveFeed", () => {
     expect(onResync).toHaveBeenCalledTimes(1);
   });
 
+  it("reopens with the ready id after a resync instead of resending the stale id", () => {
+    start();
+    FakeSource.opened[0].emit("ready", { at: "2026-10-28T03:20:00Z", lastEventId: 3 });
+    FakeSource.opened[0].fail();
+    vi.advanceTimersByTime(3_000);
+    FakeSource.opened[1].emit("ready", { at: "2026-10-28T03:20:03Z", lastEventId: 90 });
+    FakeSource.opened[1].emit("resync", { reason: "too-old" });
+    FakeSource.opened[1].fail();
+    vi.advanceTimersByTime(3_000);
+    expect(FakeSource.opened.map((s) => s.url)).toEqual([
+      "/api/v1/stream",
+      "/api/v1/stream?lastEventId=3",
+      "/api/v1/stream?lastEventId=90",
+    ]);
+  });
+
   it("drops an earthquake frame whose seq was already delivered", () => {
     const { onEarthquake } = start();
     const source = FakeSource.opened[0];

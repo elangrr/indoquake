@@ -5,6 +5,7 @@ import {
   BMKG_INATEST_URI,
   tsunamiStatusFromPotential,
 } from "@indoquake/tsunami";
+import { sentenceCase } from "@/lib/sentence-case";
 
 interface TsunamiPanelProps {
   event: EarthquakeEvent | null;
@@ -21,12 +22,10 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
 
   return (
     <div className="border-b border-border px-4 py-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-foreground">
-          🌊 STATUS TSUNAMI
-        </h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-foreground">Status tsunami</h2>
         <span className="rounded-sm border border-ok px-1.5 text-xs font-medium text-ok">
-          SUMBER: BMKG
+          Sumber BMKG
         </span>
       </div>
 
@@ -48,11 +47,13 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
                 : "text-xs font-semibold text-muted"
           }
         >
-          {info.label}
+          {sentenceCase(info.label)}
         </p>
-        <p className="mt-0.5 text-xs leading-relaxed text-foreground/80">
-          {info.description}
-        </p>
+        {!isNoThreat && (
+          <p className="mt-0.5 text-xs leading-relaxed text-foreground/80">
+            {info.description}
+          </p>
+        )}
       </div>
 
       {isPotential && (
@@ -69,29 +70,21 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
               Lokasi Anda dekat pantai (≤10 km). Ikuti arahan resmi BMKG/BPBD.
             </p>
           )}
-          <a
-            href={BMKG_INATEST_URI}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex min-h-11 items-center rounded-sm border border-danger px-4 text-sm text-danger hover:bg-danger-soft"
-          >
-            Informasi resmi InaTEWS BMKG
-          </a>
         </>
       )}
 
-      <p className="mt-2 text-xs leading-relaxed text-muted">
-        Aplikasi tidak pernah mendeklarasikan tsunami sendiri; status di atas
-        berasal dari data resmi BMKG.{" "}
-        <a
-          href={BMKG_INATEST_URI}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex min-h-11 items-center text-foreground underline underline-offset-4"
-        >
-          InaTEWS
-        </a>
-      </p>
+      <a
+        href={BMKG_INATEST_URI}
+        target="_blank"
+        rel="noreferrer"
+        className={
+          isPotential
+            ? "mt-2 inline-flex min-h-11 items-center rounded-sm border border-danger px-4 text-sm text-danger transition-colors duration-150 hover:bg-danger-soft"
+            : "inline-flex min-h-11 items-center text-xs text-foreground underline underline-offset-4"
+        }
+      >
+        Informasi resmi InaTEWS BMKG
+      </a>
     </div>
   );
 }

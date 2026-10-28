@@ -37,12 +37,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-function Section({ title, tag, children }: { title: string; tag?: "RESMI BMKG" | "ESTIMASI"; children: React.ReactNode }) {
+function Section({ title, tag, children }: { title: string; tag?: "Resmi BMKG" | "Estimasi"; children: React.ReactNode }) {
   return (
     <section className="border-t border-border py-6">
       <h2 className="flex items-center gap-3 text-base font-semibold text-foreground">
         {title}
-        {tag && <span className="rounded-sm border border-border px-1.5 text-xs font-medium tracking-wide text-muted">{tag}</span>}
+        {tag && <span className="rounded-sm border border-border px-1.5 text-xs font-medium text-muted">{tag}</span>}
       </h2>
       <div className="mt-3">{children}</div>
     </section>
@@ -84,7 +84,7 @@ export default async function EarthquakeDetailPage({ params }: Params) {
         <p className="num mt-2 text-sm text-muted">{formatWibDateTime(event.eventTimeUtc)}</p>
       </header>
 
-      <Section title="Parameter gempa" tag="RESMI BMKG">
+      <Section title="Parameter gempa" tag="Resmi BMKG">
         <dl className="num grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
           {facts.map((fact) => (
             <div key={fact.label} className="contents">
@@ -95,13 +95,13 @@ export default async function EarthquakeDetailPage({ params }: Params) {
         </dl>
       </Section>
 
-      <Section title="Status tsunami" tag="RESMI BMKG">
+      <Section title="Status tsunami" tag="Resmi BMKG">
         <p className={`text-base ${event.tsunamiPotential ? "font-semibold text-danger" : "text-foreground"}`}>{tsunamiText}</p>
         {event.potentialText && <p className="mt-1 text-sm text-muted">BMKG: {event.potentialText}</p>}
         <p className="mt-4 max-w-prose text-sm text-muted">{SAFETY_DISCLAIMER}</p>
       </Section>
 
-      <Section title="Laporan dirasakan" tag="RESMI BMKG">
+      <Section title="Laporan dirasakan" tag="Resmi BMKG">
         {feltReports.length > 0 ? (
           <ul className="flex flex-wrap gap-2">
             {feltReports.map((report, index) => (
@@ -118,7 +118,7 @@ export default async function EarthquakeDetailPage({ params }: Params) {
       </Section>
 
       {event.shakemapUrl && (
-        <Section title="ShakeMap" tag="RESMI BMKG">
+        <Section title="ShakeMap" tag="Resmi BMKG">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={event.shakemapUrl}
