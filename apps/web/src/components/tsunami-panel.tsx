@@ -33,9 +33,9 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
       <div
         className={
           isPotential
-            ? "mt-2 rounded-md border border-red-500/60 bg-red-950/50 px-3 py-2"
+            ? "mt-2 border-l-2 border-danger bg-danger-soft px-3 py-2"
             : isNoThreat
-              ? "mt-2 rounded-md border border-emerald-500/40 bg-emerald-950/30 px-3 py-2"
+              ? "mt-2 border-l-2 border-ok bg-surface-2 px-3 py-2"
               : "mt-2 rounded-sm border border-border bg-surface-2 px-3 py-2"
         }
       >
@@ -73,7 +73,7 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
             href={BMKG_INATEST_URI}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 inline-block rounded-md border border-red-400/60 px-2.5 py-1 text-xs text-danger hover:bg-danger-soft"
+            className="mt-2 inline-flex min-h-11 items-center rounded-sm border border-danger px-4 text-sm text-danger hover:bg-danger-soft"
           >
             Informasi resmi InaTEWS BMKG
           </a>
@@ -87,7 +87,7 @@ export function TsunamiPanel({ event, coastDistanceKm }: TsunamiPanelProps) {
           href={BMKG_INATEST_URI}
           target="_blank"
           rel="noreferrer"
-          className="text-foreground underline underline-offset-4"
+          className="inline-flex min-h-11 items-center text-foreground underline underline-offset-4"
         >
           InaTEWS
         </a>

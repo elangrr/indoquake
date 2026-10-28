@@ -1,0 +1,61 @@
+import { expect, test } from "@playwright/test";
+import Redis from "ioredis";
+import { EVENT_CHANNEL, HEARTBEAT_KEY } from "@indoquake/shared";
+import { newQuake } from "../../support/fixtures";
+
+// Project `full`: real web server, PostGIS and Redis started by scripts/run-full.mjs
+// (or e2e:serve + E2E_* env). Runs in the merge card; prints SKIP in the sandbox.
+const REDIS_URL = process.env.E2E_REDIS_URL;
+const SEEDED_KEY = process.env.E2E_SEEDED_KEY;
+
+test.skip(!process.env.E2E_BASE_URL || !REDIS_URL, "full stack not running");
+
+test("F1 server-rendered home shows seeded rows without JavaScript", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.locator("[data-event-key]").first()).toBeVisible();
+  expect(await page.locator("[data-event-key]").count()).toBeGreaterThan(10);
+  await context.close();
+});
+
+test("F2 an earthquake:new published on Redis appears live", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: /^Status data:/ })).toBeVisible();
+  const redis = new Redis(REDIS_URL!);
+  const event = { ...newQuake(), eventKey: "f2f2f2f2f2f2f2f2" };
+  await page.waitForTimeout(1_000);
+  await redis.publish(EVENT_CHANNEL, JSON.stringify({ type: "earthquake:new", event, seq: 900_001 }));
+  await expect(page.locator('[data-event-key="f2f2f2f2f2f2f2f2"]')).toBeVisible({ timeout: 15_000 });
+  await redis.quit();
+});
+
+test("F3 a stale heartbeat in Redis shows Tertunda", async ({ page }) => {
+  const redis = new Redis(REDIS_URL!);
+  const lastSuccessAt = new Date(Date.now() - 5 * 60_000).toISOString();
+  const feed = { fetched: false, events: 0, lastOkAt: lastSuccessAt, consecutiveFailures: 30 };
+  await redis.set(
+    HEARTBEAT_KEY,
+    JSON.stringify({ at: new Date().toISOString(), ok: false, lastSuccessAt, feeds: { autogempa: feed, gempaterkini: feed, gempadirasakan: feed } }),
+    "EX",
+    900,
+  );
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Status data: Tertunda" })).toBeVisible({ timeout: 10_000 });
+  await redis.quit();
+});
+
+test("F4 @needs-lane-a riwayat province, q and page against the real API", async ({ page }) => {
+  await page.goto("/riwayat?province=jawa-timur&q=Malang&page=1");
+  await expect(page.getByTestId("history-count")).toHaveText(/^\d+ gempa$/);
+  const rows = page.locator("[data-event-key]");
+  await expect(rows.first()).toBeVisible();
+  await expect(rows.filter({ hasNotText: "Malang" })).toHaveCount(0);
+});
+
+test("F5 detail page renders a seeded quake on the server", async ({ page }) => {
+  test.skip(!SEEDED_KEY, "no seeded key");
+  await page.goto(`/gempa/${SEEDED_KEY}`);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Pusat gempa");
+  expect(await page.title()).toMatch(/^M\d\.\d /);
+});

@@ -290,6 +290,7 @@ export function EarthquakeMap({
     pulseRef.current = L.marker([latest.latitude, latest.longitude], {
       icon,
       interactive: false,
+      keyboard: false,
     }).addTo(map);
   }, [events, ready, pulseKey]);
 
@@ -312,7 +313,7 @@ export function EarthquakeMap({
     });
     userMarkerRef.current = L.marker(
       [userLocation.latitude, userLocation.longitude],
-      { icon, interactive: false },
+      { icon, interactive: false, keyboard: false },
     ).addTo(map);
 
     if (userLocation.accuracyM > 0) {
@@ -495,7 +496,7 @@ export function EarthquakeMap({
         iconAnchor: [0, 0],
       });
       state.markers.push(
-        L.marker(center, { icon, interactive: false }).addTo(map),
+        L.marker(center, { icon, interactive: false, keyboard: false }).addTo(map),
       );
     }
 

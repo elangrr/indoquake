@@ -58,7 +58,7 @@ export function useFeltLocations(eventKey: string | null, enabled: boolean) {
           }, RETRY_DELAY_MS);
         }
       } catch {
-        // abaikan — coba lagi pada pemilihan berikutnya
+        // abaikan: coba lagi pada pemilihan berikutnya
       }
     };
 

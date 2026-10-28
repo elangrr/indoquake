@@ -14,7 +14,12 @@
     "@axe-core/playwright": "4.14.0",
     "@indoquake/shared": "*",
     "@playwright/test": "1.62.1",
+    "@testcontainers/postgresql": "12.2.1",
     "@types/node": "^24.13.5",
+    "drizzle-orm": "^0.45.2",
+    "ioredis": "^6.0.0",
+    "postgres": "^3.4.9",
+    "testcontainers": "12.2.1",
     "typescript": "^5.9.3"
   }
 }

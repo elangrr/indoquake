@@ -80,7 +80,7 @@ export function rowOption(labels: string[], values: number[], colors: ChartColor
   };
 }
 
-/** API bucket labels use typographic dashes ("2 – 3", "≥ 6"); the UI writes them in words. */
+/** API bucket labels use typographic dashes (U+2013) and U+2265; the UI writes them in words. */
 export function bucketLabel(label: string): string {
   return label
     .replace(/\s*[\u2013\u2014]\s*/g, " sampai ")

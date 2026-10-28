@@ -169,7 +169,7 @@ export function SubscriptionForm() {
                 href={`https://t.me/${botUsername}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 inline-block rounded-md border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent hover:bg-accent/20"
+                className="mt-2 inline-flex min-h-11 items-center rounded-sm bg-foreground px-4 text-sm font-medium text-background"
               >
                 Buka @{botUsername} di Telegram
               </a>

@@ -21,7 +21,7 @@ export function useServerTime() {
           if (!cancelled) setSynced(true);
         }
       } catch {
-        // sinkronisasi gagal — pakai jam lokal
+        // sinkronisasi gagal: pakai jam lokal
       }
     })();
     return () => {

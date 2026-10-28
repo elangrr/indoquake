@@ -124,7 +124,7 @@ function ManualLocationForm({
           <p className="mt-1 text-xs text-danger">{searchError}</p>
         )}
         {results.length > 0 && (
-          <ul className="mt-1 max-h-40 overflow-y-auto rounded-md border border-border">
+          <ul className="mt-1 max-h-40 overflow-y-auto rounded-sm border border-border">
             {results.map((result) => (
               <li
                 key={`${result.name}-${result.latitude}-${result.longitude}`}
