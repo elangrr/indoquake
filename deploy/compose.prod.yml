@@ -27,11 +27,13 @@ services:
       - indoquake_prod_pgdata:/var/lib/postgresql
     networks: [internal]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U indoquake -d indoquake"]
+      # Over TCP: on first start the entrypoint runs initdb on a socket-only temp server, so a socket
+      # check can pass before TCP is open (migrate also retries its first connect).
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U indoquake -d indoquake"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 60s
     deploy:
       resources:
         limits: { cpus: "1.5", memory: 2g }
@@ -41,6 +43,9 @@ services:
   redis:
     image: redis:8.10.3-alpine
     restart: unless-stopped
+    # Non-root (D4): the sh -c command skips the entrypoint's su-exec drop, so set the image's redis
+    # user (uid 999) here. A new named volume copies /data owned by redis from the image.
+    user: redis
     command: ["sh", "-c", "exec redis-server --appendonly yes --maxmemory 384mb --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}

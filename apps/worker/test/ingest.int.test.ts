@@ -93,6 +93,8 @@ describe("ingest against PostGIS and a mock BMKG", () => {
     await poll("autogempa");
     serve("gempaterkini", feedBody(gempa(REVISED)));
     await poll("gempaterkini");
+    serve("gempaterkini", feedBody(gempa(REVISED)));
+    await poll("gempaterkini");
 
     const rows = await db.select().from(earthquakes);
     expect(rows).toHaveLength(1);

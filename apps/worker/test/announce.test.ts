@@ -34,7 +34,10 @@ describe("shouldAnnounce (A-06, D07)", () => {
 describe("shouldReannounce (BRIEF A2 revision rule)", () => {
   it.each([
     ["tsunami flag false to true", { magnitude: 5, tsunamiPotential: false }, { magnitude: 5, tsunamiPotential: true }, true],
-    ["tsunami flag unknown to false", { magnitude: 5, tsunamiPotential: null }, { magnitude: 5, tsunamiPotential: false }, true],
+    ["tsunami flag unknown to true", { magnitude: 5, tsunamiPotential: null }, { magnitude: 5, tsunamiPotential: true }, true],
+    ["tsunami flag true to false", { magnitude: 5, tsunamiPotential: true }, { magnitude: 5, tsunamiPotential: false }, true],
+    ["tsunami flag unknown to false (D23b)", { magnitude: 5, tsunamiPotential: null }, { magnitude: 5, tsunamiPotential: false }, false],
+    ["tsunami flag false to unknown (D23b)", { magnitude: 5, tsunamiPotential: false }, { magnitude: 5, tsunamiPotential: null }, false],
     ["magnitude +0.5", { magnitude: 5, tsunamiPotential: false }, { magnitude: 5.5, tsunamiPotential: false }, true],
     ["magnitude -0.5", { magnitude: 5.6, tsunamiPotential: false }, { magnitude: 5.1, tsunamiPotential: false }, true],
     ["magnitude +0.3 within one side", { magnitude: 5, tsunamiPotential: false }, { magnitude: 5.3, tsunamiPotential: false }, false],

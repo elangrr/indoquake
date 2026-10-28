@@ -24,18 +24,18 @@ export interface RevisionFacts {
 }
 
 /**
- * A revision is re-announced (notified again) only when the tsunami flag changes, the magnitude moves
- * by >= 0.5, or the magnitude crosses the notify threshold. Called once per stored revision, so
- * each qualifying change is announced once.
+ * A revision is re-announced (notified again) only when the tsunami flag changes to true or from true
+ * to false (D23b: unknown <-> false never re-announces), the magnitude moves by >= 0.5, or the
+ * magnitude crosses the notify threshold. Called once per stored revision, so each qualifying change
+ * is announced once.
  */
 export function shouldReannounce(
   previous: RevisionFacts,
   next: RevisionFacts,
   notifyThreshold: number,
 ): boolean {
-  if (next.tsunamiPotential !== null && next.tsunamiPotential !== previous.tsunamiPotential) {
-    return true;
-  }
+  if (next.tsunamiPotential === true && previous.tsunamiPotential !== true) return true;
+  if (previous.tsunamiPotential === true && next.tsunamiPotential === false) return true;
   if (Math.abs(next.magnitude - previous.magnitude) >= REANNOUNCE_MAGNITUDE_DELTA - 1e-9) return true;
   return (previous.magnitude >= notifyThreshold) !== (next.magnitude >= notifyThreshold);
 }

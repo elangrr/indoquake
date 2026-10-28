@@ -72,7 +72,8 @@ export function createFeedPoller(deps: FeedPollerDeps): FeedPoller {
       try {
         const outcome = await upsertEarthquake(deps.db, event, { now: now() });
         totals[outcome.result] += 1;
-        if (outcome.merge) logger.info({ feed, ...outcome.merge }, "dedup merge");
+        // Log a dedup merge only when the merge changed the stored row (a re-parse of the same data is silent).
+        if (outcome.merge && outcome.result !== "unchanged") logger.info({ feed, ...outcome.merge }, "dedup merge");
         if (outcome.result !== "unchanged") {
           logger.info(
             { feed, key: outcome.event.eventKey, result: outcome.result, announce: outcome.announce, seq: outcome.seq },

@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import pino from "pino";
 import { createDb } from "@indoquake/database";
-import { runMigrations } from "@indoquake/database/migrate";
+import { MIGRATIONS_FOLDER, runMigrations, type RunMigrationsOptions } from "@indoquake/database/migrate";
 import { BMKG_ATTRIBUTION, EVENT_CHANNEL, type FeedName } from "@indoquake/shared";
 import { backfillProvinces } from "./backfill";
 import { loadConfig } from "./env";
@@ -19,9 +19,13 @@ loadEnv({ path: fileURLToPath(new URL("../../../.env", import.meta.url)), quiet:
 const config = loadConfig();
 const logger = pino({ level: config.logLevel });
 const command = process.argv[2];
+// The first DB connect is retried while Postgres is still starting (compose start order, A-M1).
+const migrateOptions: RunMigrationsOptions = {
+  retry: { onRetry: (retry) => logger.warn(retry, "migrate_connect_retry") },
+};
 
 async function migrateOnly(): Promise<void> {
-  await runMigrations(config.databaseUrl);
+  await runMigrations(config.databaseUrl, MIGRATIONS_FOLDER, migrateOptions);
   logger.info("migrations_applied");
 }
 
@@ -34,7 +38,7 @@ async function main(): Promise<void> {
   console.log(BMKG_ATTRIBUTION);
 
   // Start order (SPEC 5): migrations under an advisory lock, province backfill, then the scheduler.
-  await runMigrations(config.databaseUrl);
+  await runMigrations(config.databaseUrl, MIGRATIONS_FOLDER, migrateOptions);
   const { sql, db } = createDb(config.databaseUrl);
   const backfill = await backfillProvinces(db);
   logger.info(backfill, "province_backfill_done");

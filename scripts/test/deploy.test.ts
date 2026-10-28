@@ -61,6 +61,17 @@ describe("deploy/compose.prod.yml (A-21, D3, D4, D15, D16)", () => {
     expect(["postgres", "redis", "web"].map((name) => typeof service(name).healthcheck)).toEqual(["object", "object", "object"]);
   });
 
+  it("checks postgres readiness over TCP with a start period (A-M1)", () => {
+    expect(service("postgres").healthcheck).toMatchObject({
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U indoquake -d indoquake"],
+      start_period: "60s",
+    });
+  });
+
+  it("runs redis as the image's redis user, not root (D4, A-L1)", () => {
+    expect(service("redis").user).toBe("redis");
+  });
+
   it("keeps postgres and redis on the internal network only", () => {
     expect(compose.networks.internal).toEqual({ internal: true });
     expect([service("postgres").networks, service("redis").networks]).toEqual([["internal"], ["internal"]]);
