@@ -5,7 +5,7 @@
 Butuh Node 20.9+ (image produksi memakai Node 24 LTS), Postgres (image PostGIS) dan Redis lokal.
 
 ```sh
-docker run -d --name iq-pg -e POSTGRES_USER=indoquake -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=indoquake \
+docker run -d --name iq-pg -e POSTGRES_USER=indoquake -e POSTGRES_PASSWORD="${DEV_DB_PASSWORD}" -e POSTGRES_DB=indoquake \
   -p 127.0.0.1:5432:5432 postgis/postgis:18-3.6-alpine
 docker run -d --name iq-redis -p 127.0.0.1:6379:6379 redis:8.10.3-alpine
 npm install

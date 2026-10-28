@@ -10,7 +10,7 @@ const IPV4 = /(?<![\d.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.])/g;
 const PRIVATE_KEY = new RegExp("BEGIN [A-Z ]*" + "PRIVATE KEY");
 const PPK = new RegExp("\\." + "ppk\\b", "i"); // split so this file passes its own check
 const WINDOWS_USER_PATH = /[A-Za-z]:\\+Users\\+[^\\\s"']+/;
-const PASSWORD_LITERAL = /password\s*=\s*(?!\$\{|\$[A-Z_]|<|"?\s*$|'?\s*$)["']?[^\s"'#]+/i;
+const PASSWORD_LITERAL = /password\s*=\s*(?!["']?\$\{|["']?\$[A-Z_]|<|"?\s*$|'?\s*$)["']?[^\s"'#]+/i;
 
 function allowedIp(octets) {
   const [a, b, c] = octets;

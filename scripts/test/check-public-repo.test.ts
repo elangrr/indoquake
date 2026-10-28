@@ -39,6 +39,7 @@ describe("check-public-repo CLI", () => {
   it.each([
     ["loopback and documentation addresses", "127.0.0.1:3410 192.0.2.10 198.51.100.7 203.0.113.9", "notes.md"],
     ["a password taken from the environment", "password=${POSTGRES_PASSWORD}", "notes.md"],
+    ["a quoted password taken from the environment", 'PASSWORD="${DEV_DB_PASSWORD}"', "notes.md"],
     ["svg path data", '<path d="M' + dotted("1", "5", "75", "75") + ' 0"/>', "icon.svg"],
   ])("passes on %s", (_label, content, name) => {
     expect(check(repoWith(content, name)).status).toBe(0);
