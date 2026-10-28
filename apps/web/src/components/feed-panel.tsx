@@ -68,16 +68,19 @@ export function FeedPanel({
   pulseKey = null,
 }: FeedPanelProps) {
   const listRef = useRef<HTMLUListElement | null>(null);
-  const [infoOpen, setInfoOpen] = useState(true);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const shownKey = useRef(selectedKey);
 
+  // Bring a row into view only when the selection changes (e.g. a map click), never on
+  // first render or when live events arrive, so the page does not jump.
   useEffect(() => {
+    if (selectedKey === shownKey.current) return;
+    shownKey.current = selectedKey;
     const list = listRef.current;
     if (!list || !selectedKey) return;
-    const element = list.querySelector(
-      `[data-event-key="${CSS.escape(selectedKey)}"]`,
-    );
+    const element = list.querySelector(`[data-event-key="${CSS.escape(selectedKey)}"]`);
     element?.scrollIntoView({ block: "nearest" });
-  }, [selectedKey, events]);
+  }, [selectedKey]);
 
   const summary =
     filter === "near" && location

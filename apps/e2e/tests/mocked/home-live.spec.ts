@@ -27,6 +27,15 @@ test("E1 home shows the list, the status and the map placeholder, then the theme
   await expect(page.locator("img.leaflet-tile").first()).toHaveAttribute("src", /light_all/);
 });
 
+test("E1 the page does not scroll by itself on load or when a live quake arrives", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openHome(page);
+  await ready(page);
+  await emit(page, "earthquake", { type: "earthquake:new", event: newQuake(), seq: 121 }, "121");
+  await expect(page.locator(`[data-event-key="${NEW_QUAKE_KEY}"]`)).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
 test("E1 selecting a quake draws intensity rings by magnitude class", async ({ page }) => {
   await openHome(page);
   await expect(page.locator(".leaflet-container")).toBeVisible();
