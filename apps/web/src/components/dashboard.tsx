@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { EarthquakeEvent, EarthquakeStreamPayload } from "@indoquake/shared";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import type { EarthquakeEvent, EarthquakeListResponse } from "@indoquake/shared";
 import { haversineKm } from "@indoquake/geo";
 import { estimateFeltRadiusKm } from "@indoquake/earthquake";
 import { tsunamiStatusFromPotential } from "@indoquake/tsunami";
 import { matchesSubscription } from "@indoquake/notifications";
-import { EarthquakeMap } from "./earthquake-map";
 import { EventToasts, type ToastItem } from "./event-toasts";
+import { LatestQuake } from "./latest-quake";
+import { useLive } from "./live-provider";
+import { MapPlaceholder } from "./map-placeholder";
 import { EtaPanel } from "./eta-panel";
 import { TsunamiPanel } from "./tsunami-panel";
 import {
@@ -16,7 +19,10 @@ import {
   type FeedFilter,
 } from "./feed-panel";
 import { LocationPanel } from "./location-panel";
+import { ErrorState } from "./error-state";
 import { distanceToCoastKm } from "@/lib/coastline";
+import { mergeEvent, mergeEvents } from "@/lib/merge-event";
+import { useIdle } from "@/lib/use-idle";
 import { buildDistanceMap, findNearest } from "@/lib/distances";
 import { readNotifySettings } from "@/lib/notify-settings";
 import { REPLAY_SPEED, type ReplayState } from "@/lib/replay";
@@ -24,7 +30,25 @@ import { useFeltLocations } from "@/lib/use-felt-locations";
 import { readStoredUserLocation, useGeolocation } from "@/lib/use-geolocation";
 import { useServerTime } from "@/lib/use-server-time";
 
+const EarthquakeMap = dynamic(
+  () => import("./earthquake-map").then((module) => module.EarthquakeMap),
+  { ssr: false, loading: () => <MapPlaceholder /> },
+);
+
 const TOAST_DURATION_MS = 12_000;
+const PULSE_MS = 6_000;
+const LIST_URL = "/api/v1/earthquakes?limit=100";
+
+async function loadList(): Promise<EarthquakeEvent[] | null> {
+  try {
+    const response = await fetch(LIST_URL, { cache: "no-store" });
+    if (!response.ok) return null;
+    const body = (await response.json()) as EarthquakeListResponse;
+    return Array.isArray(body.data) ? body.data : null;
+  } catch {
+    return null;
+  }
+}
 
 function maybeNotifyBrowser(event: EarthquakeEvent): void {
   if (typeof window === "undefined" || !("Notification" in window)) return;
@@ -72,9 +96,9 @@ function maybeNotifyBrowser(event: EarthquakeEvent): void {
 
   try {
     const notification = new window.Notification(
-      `Gempa M${event.magnitude.toFixed(1)} — ${event.regionName}`,
+      `Gempa M${event.magnitude.toFixed(1)}, ${event.regionName}`,
       {
-        body: `Kedalaman ${event.depthKm} km · ${event.eventTimeWib}\nSumber: BMKG — notifikasi aplikasi, bukan peringatan resmi.`,
+        body: `Kedalaman ${event.depthKm} km\nSumber: BMKG. Notifikasi aplikasi, bukan peringatan resmi.`,
         tag: event.eventKey,
       },
     );
@@ -86,25 +110,12 @@ function maybeNotifyBrowser(event: EarthquakeEvent): void {
   }
 }
 
-function mergeEvent(
-  events: EarthquakeEvent[],
-  incoming: EarthquakeEvent,
-): EarthquakeEvent[] {
-  const withoutIncoming = events.filter(
-    (event) => event.eventKey !== incoming.eventKey,
-  );
-  return [incoming, ...withoutIncoming].sort(
-    (a, b) =>
-      new Date(b.eventTimeUtc).getTime() - new Date(a.eventTimeUtc).getTime(),
-  );
-}
-
 export function Dashboard({
   initialEvents,
   dataError,
 }: {
   initialEvents: EarthquakeEvent[];
-  dataError: string | null;
+  dataError: boolean;
 }) {
   const [events, setEvents] = useState(initialEvents);
   const [selectedKey, setSelectedKey] = useState<string | null>(
@@ -112,7 +123,12 @@ export function Dashboard({
   );
   const [filter, setFilter] = useState<FeedFilter>("all");
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [pulseKey, setPulseKey] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const [listError, setListError] = useState(false);
+  const timers = useRef(new Set<number>());
+  const mapAllowed = useIdle();
+  const live = useLive();
   const [radiusKm, setRadiusKm] = useState(100);
   const [replay, setReplay] = useState<ReplayState | null>(null);
   const [showFelt, setShowFelt] = useState(true);
@@ -122,36 +138,66 @@ export function Dashboard({
   const { now: serverNow } = useServerTime();
   const felt = useFeltLocations(selectedKey, showFelt);
 
-  useEffect(() => {
-    const source = new EventSource("/api/v1/stream");
-    source.addEventListener("ready", () => setConnected(true));
-    source.addEventListener("earthquake", (event) => {
-      const message = event as MessageEvent<string>;
-      let payload: EarthquakeStreamPayload;
-      try {
-        payload = JSON.parse(message.data) as EarthquakeStreamPayload;
-      } catch {
-        return;
-      }
-      setConnected(true);
-      setEvents((previous) => mergeEvent(previous, payload.event));
-      if (payload.type === "earthquake:new") {
-        const toast: ToastItem = {
-          id: `${payload.event.eventKey}-${Date.now()}`,
-          event: payload.event,
-        };
-        setToasts((previous) => [toast, ...previous].slice(0, 3));
-        window.setTimeout(() => {
-          setToasts((previous) =>
-            previous.filter((item) => item.id !== toast.id),
-          );
-        }, TOAST_DURATION_MS);
-        maybeNotifyBrowser(payload.event);
-      }
-    });
-    source.onerror = () => setConnected(false);
-    return () => source.close();
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      timers.current.delete(id);
+      fn();
+    }, ms);
+    timers.current.add(id);
   }, []);
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      for (const id of pending) window.clearTimeout(id);
+      pending.clear();
+    };
+  }, []);
+
+  const applyList = useCallback((list: EarthquakeEvent[] | null) => {
+    if (!list) {
+      setListError(true);
+      return;
+    }
+    setEvents((previous) => mergeEvents(previous, list));
+    setSelectedKey((current) => current ?? list[0]?.eventKey ?? null);
+    setListError(false);
+  }, []);
+
+  const refetch = useCallback(() => {
+    void loadList().then(applyList);
+  }, [applyList]);
+
+  // The server render could not read the database: load the list from the API instead.
+  useEffect(() => {
+    if (!dataError) return;
+    let cancelled = false;
+    void loadList().then((list) => {
+      if (!cancelled) applyList(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataError, applyList]);
+
+  useEffect(() => live.onResync(refetch), [live, refetch]);
+
+  useEffect(
+    () =>
+      live.onEarthquake((payload) => {
+        setEvents((previous) => mergeEvent(previous, payload.event));
+        if (payload.type !== "earthquake:new") return;
+        const event = payload.event;
+        setPulseKey(event.eventKey);
+        later(() => setPulseKey((current) => (current === event.eventKey ? null : current)), PULSE_MS);
+        setAnnouncement(`Gempa baru M${event.magnitude.toFixed(1)}, ${event.regionName}`);
+        const toast: ToastItem = { id: `${event.eventKey}-${payload.seq ?? Date.now()}`, event };
+        setToasts((previous) => [toast, ...previous.filter((item) => item.event.eventKey !== event.eventKey)].slice(0, 3));
+        later(() => setToasts((previous) => previous.filter((item) => item.id !== toast.id)), TOAST_DURATION_MS);
+        maybeNotifyBrowser(event);
+      }),
+    [live, later],
+  );
 
   const distances = useMemo(
     () => buildDistanceMap(events, location),
@@ -271,95 +317,92 @@ export function Dashboard({
     });
   }, [events, selectedKey]);
 
+  const mapProps = {
+    events,
+    selectedKey,
+    onSelect: selectFromMap,
+    userLocation: location,
+    nearActive: filter === "near",
+    radiusKm,
+    replay: activeReplay,
+    feltLocations: felt.locations,
+    epicenter,
+    feltRadiusKm: activeReplay ? null : feltRadiusKm,
+    pulseKey,
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {dataError && (
-        <div className="border-b border-amber-500/50 bg-amber-500/10 px-4 py-2 text-[11px] leading-relaxed text-amber-200">
-          <span className="font-semibold text-amber-300">
-            ⚠️ DATA TIDAK TERSEDIA
-          </span>{" "}
-          Tidak dapat memuat data gempa dari server (koneksi database/tunnel).
-          Periksa tunnel lalu muat ulang halaman.
-        </div>
-      )}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className="relative h-[45vh] w-full shrink-0 lg:h-full lg:min-h-0 lg:flex-1">
-        <EarthquakeMap
-          events={events}
-          selectedKey={selectedKey}
-          onSelect={selectFromMap}
-          userLocation={location}
-          nearActive={filter === "near"}
-          radiusKm={radiusKm}
-          replay={activeReplay}
-          feltLocations={felt.locations}
-          epicenter={epicenter}
-          feltRadiusKm={activeReplay ? null : feltRadiusKm}
-        />
-        <EventToasts items={toasts} onSelect={selectFromMap} />
+    <div className="mx-auto w-full max-w-screen-2xl lg:grid lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
+      <p aria-live="polite" role="status" className="sr-only" data-testid="live-announcer">
+        {announcement}
+      </p>
+      <EventToasts items={toasts} onSelect={selectFromMap} />
+      <div className="min-w-0 lg:border-r lg:border-border">
+        {listError && events.length === 0 && (
+          <div className="px-4 pt-6">
+            <ErrorState onRetry={refetch} />
+          </div>
+        )}
+        <LatestQuake event={events[0] ?? null} events={events} />
         {tsunamiInfo?.status === "potential" && selectedEvent && (
-          <div className="absolute inset-x-3 top-3 z-[700] rounded-lg border border-red-500/70 bg-red-950/85 px-3 py-2 backdrop-blur">
-            <p className="text-[11px] font-semibold text-red-300">
-              ⚠️ BERPOTENSI TSUNAMI — STATUS RESMI BMKG
-            </p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-red-100/90">
-              M{selectedEvent.magnitude.toFixed(1)} · {selectedEvent.regionName}.
-              Ikuti arahan resmi BMKG/BPBD.
+          <div role="alert" className="mx-4 mb-4 border-l-2 border-danger bg-danger-soft px-4 py-3">
+            <p className="text-sm font-semibold text-danger">Berpotensi tsunami, status resmi BMKG</p>
+            <p className="mt-1 text-sm text-foreground">
+              M{selectedEvent.magnitude.toFixed(1)}, {selectedEvent.regionName}. Ikuti arahan resmi BMKG dan BPBD.
             </p>
           </div>
         )}
-        <div className="pointer-events-none absolute right-3 bottom-3 z-[600] rounded-full border border-border bg-surface/90 px-2.5 py-1 text-[11px] text-muted backdrop-blur">
-          {connected ? "Terhubung realtime" : "Menghubungkan realtime…"}
-        </div>
+        <FeedPanel
+          events={filteredEvents}
+          totalCount={events.length}
+          filter={filter}
+          onFilterChange={setFilter}
+          selectedKey={selectedKey}
+          onSelect={setSelectedKey}
+          distances={distances}
+          location={location}
+          radiusKm={radiusKm}
+          onRequestLocation={request}
+          pulseKey={pulseKey}
+          locationPanel={
+            <LocationPanel
+              status={status}
+              location={location}
+              error={error}
+              nearest={nearest}
+              radiusKm={radiusKm}
+              coastDistanceKm={coastDistanceKm}
+              onRadiusChange={setRadiusKm}
+              onRequest={request}
+              onClear={clear}
+              onSetManual={setManual}
+              onSelectEvent={selectFromMap}
+            />
+          }
+          etaPanel={
+            <EtaPanel
+              event={selectedEvent}
+              distance={selectedDistance}
+              serverNow={serverNow}
+              replay={activeReplay}
+              onToggleReplay={toggleReplay}
+              showFelt={showFelt}
+              onToggleFelt={() => setShowFelt((current) => !current)}
+              feltResolved={felt.locations.length}
+              feltPending={felt.pending}
+              feltRadiusKm={feltRadiusKm}
+              feltRadiusSource={feltRadiusSource}
+            />
+          }
+          tsunamiPanel={<TsunamiPanel event={selectedEvent} coastDistanceKm={coastDistanceKm} />}
+        />
       </div>
-      <FeedPanel
-        events={filteredEvents}
-        totalCount={events.length}
-        filter={filter}
-        onFilterChange={setFilter}
-        selectedKey={selectedKey}
-        onSelect={setSelectedKey}
-        distances={distances}
-        location={location}
-        radiusKm={radiusKm}
-        onRequestLocation={request}
-        locationPanel={
-          <LocationPanel
-            status={status}
-            location={location}
-            error={error}
-            nearest={nearest}
-            radiusKm={radiusKm}
-            coastDistanceKm={coastDistanceKm}
-            onRadiusChange={setRadiusKm}
-            onRequest={request}
-            onClear={clear}
-            onSetManual={setManual}
-            onSelectEvent={selectFromMap}
-          />
-        }
-        etaPanel={
-          <EtaPanel
-            event={selectedEvent}
-            distance={selectedDistance}
-            serverNow={serverNow}
-            replay={activeReplay}
-            onToggleReplay={toggleReplay}
-            showFelt={showFelt}
-            onToggleFelt={() => setShowFelt((current) => !current)}
-            feltResolved={felt.locations.length}
-            feltPending={felt.pending}
-            feltRadiusKm={feltRadiusKm}
-            feltRadiusSource={feltRadiusSource}
-          />
-        }
-        tsunamiPanel={
-          <TsunamiPanel
-            event={selectedEvent}
-            coastDistanceKm={coastDistanceKm}
-          />
-        }
-      />
+      <div
+        aria-label="Peta gempa"
+        role="region"
+        className="relative h-[60vh] min-h-80 border-t border-border lg:sticky lg:top-0 lg:h-[calc(100dvh-3.5rem)] lg:border-t-0"
+      >
+        {mapAllowed ? <EarthquakeMap {...mapProps} /> : <MapPlaceholder />}
       </div>
     </div>
   );

@@ -13,7 +13,9 @@ import {
   DEFAULT_VELOCITY_MODEL,
   parseMmiString,
 } from "@indoquake/earthquake";
-import { magnitudeColor } from "@/lib/magnitude";
+import { MAGNITUDE_BUCKETS, magnitudeColor, ringCount } from "@/lib/magnitude";
+import { currentTheme, type ThemeChoice } from "@/lib/theme";
+import { prefersReducedMotion } from "@/lib/motion";
 import { mmiColor } from "@/lib/mmi-colors";
 import type { ReplayState } from "@/lib/replay";
 import type { FeltLocationPoint } from "@/lib/use-felt-locations";
@@ -21,9 +23,12 @@ import type { UserLocation } from "@/lib/use-geolocation";
 import "leaflet/dist/leaflet.css";
 
 const CARTO_API_KEY = process.env.NEXT_PUBLIC_CARTO_API_KEY;
-const TILE_URL = CARTO_API_KEY
-  ? `https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?key=${CARTO_API_KEY}`
-  : "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png";
+/** Carto basemap that matches the active theme: light_all on paper, dark_all on graphite. */
+export function tileUrl(theme: ThemeChoice): string {
+  const style = theme === "dark" ? "dark_all" : "light_all";
+  const base = `https://basemaps.cartocdn.com/${style}/{z}/{x}/{y}.png`;
+  return CARTO_API_KEY ? `${base}?key=${CARTO_API_KEY}` : base;
+}
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 const JAVA_CENTER: [number, number] = [-7.3, 110.2];
@@ -44,6 +49,8 @@ interface EarthquakeMapProps {
   feltLocations: FeltLocationPoint[];
   epicenter: { latitude: number; longitude: number } | null;
   feltRadiusKm: number | null;
+  /** Event that just arrived live; its marker pulses for a few seconds. */
+  pulseKey?: string | null;
 }
 
 export function EarthquakeMap({
@@ -57,6 +64,7 @@ export function EarthquakeMap({
   feltLocations,
   epicenter,
   feltRadiusKm,
+  pulseKey = null,
 }: EarthquakeMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
@@ -64,6 +72,8 @@ export function EarthquakeMap({
   const markersRef = useRef<LayerGroup | null>(null);
   const selectedRef = useRef<CircleMarker | null>(null);
   const pulseRef = useRef<Marker | null>(null);
+  const ringsRef = useRef<Marker | null>(null);
+  const tileRef = useRef<import("leaflet").TileLayer | null>(null);
   const userMarkerRef = useRef<Marker | null>(null);
   const accuracyCircleRef = useRef<Circle | null>(null);
   const radiusCircleRef = useRef<Circle | null>(null);
@@ -108,7 +118,7 @@ export function EarthquakeMap({
         });
         mapRef.current = map;
 
-        L.tileLayer(TILE_URL, {
+        tileRef.current = L.tileLayer(tileUrl(currentTheme()), {
           attribution: TILE_ATTRIBUTION,
           maxZoom: 19,
         }).addTo(map);
@@ -116,9 +126,9 @@ export function EarthquakeMap({
         markersRef.current = L.layerGroup().addTo(map);
         selectedRef.current = L.circleMarker(JAVA_CENTER, {
           radius: 18,
-          color: "#38bdf8",
+          color: "#d9481c",
           weight: 2,
-          fillColor: "#38bdf8",
+          fillColor: "#d9481c",
           fillOpacity: 0.12,
           interactive: false,
         });
@@ -143,6 +153,9 @@ export function EarthquakeMap({
       resizeObserver = null;
       pulseRef.current?.remove();
       pulseRef.current = null;
+      ringsRef.current?.remove();
+      ringsRef.current = null;
+      tileRef.current = null;
       userMarkerRef.current?.remove();
       userMarkerRef.current = null;
       accuracyCircleRef.current?.remove();
@@ -187,7 +200,7 @@ export function EarthquakeMap({
     for (const event of events) {
       const marker = L.circleMarker([event.latitude, event.longitude], {
         radius: radiusFor(event.magnitude),
-        color: "#0b0f14",
+        color: "#16191b",
         weight: 1,
         fillColor: magnitudeColor(event.magnitude),
         fillOpacity: 0.9,
@@ -213,11 +226,49 @@ export function EarthquakeMap({
     }
     ring.setLatLng([selected.latitude, selected.longitude]);
     if (!map.hasLayer(ring)) ring.addTo(map);
-    map.flyTo(
-      [selected.latitude, selected.longitude],
-      Math.max(map.getZoom(), 7),
-      { duration: 0.9 },
-    );
+    const target: [number, number] = [selected.latitude, selected.longitude];
+    const zoom = Math.max(map.getZoom(), 7);
+    if (prefersReducedMotion()) map.setView(target, zoom, { animate: false });
+    else map.flyTo(target, zoom, { duration: 0.6 });
+  }, [selectedKey, events, ready]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const sync = () => tileRef.current?.setUrl(tileUrl(currentTheme()));
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    window.addEventListener("indoquake:theme", sync);
+    media.addEventListener("change", sync);
+    return () => {
+      window.removeEventListener("indoquake:theme", sync);
+      media.removeEventListener("change", sync);
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    if (!L || !map || !ready) return;
+    ringsRef.current?.remove();
+    ringsRef.current = null;
+    const selected = events.find((event) => event.eventKey === selectedKey);
+    if (!selected) return;
+    const rings = ringCount(selected.magnitude);
+    const size = 40 + rings * 24;
+    const html = Array.from(
+      { length: rings },
+      (_, index) => `<span class="iq-ring" style="animation-delay:${index * 300}ms"></span>`,
+    ).join("");
+    const icon = L.divIcon({
+      className: "iq-ring-host",
+      html: `<div data-rings="${rings}" style="position:relative;width:${size}px;height:${size}px">${html}</div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+    ringsRef.current = L.marker([selected.latitude, selected.longitude], {
+      icon,
+      interactive: false,
+      keyboard: false,
+    }).addTo(map);
   }, [selectedKey, events, ready]);
 
   useEffect(() => {
@@ -227,12 +278,12 @@ export function EarthquakeMap({
 
     pulseRef.current?.remove();
     pulseRef.current = null;
-    const latest = events[0];
+    const latest = pulseKey ? events.find((event) => event.eventKey === pulseKey) : undefined;
     if (!latest) return;
 
     const icon = L.divIcon({
       className: "",
-      html: '<div class="indoquake-pulse"></div>',
+      html: '<div class="iq-marker-pulse"></div>',
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
@@ -240,7 +291,7 @@ export function EarthquakeMap({
       icon,
       interactive: false,
     }).addTo(map);
-  }, [events, ready]);
+  }, [events, ready, pulseKey]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -426,10 +477,10 @@ export function EarthquakeMap({
 
     state.boundary = L.circle(center, {
       radius: feltRadiusKm * 1000,
-      color: "#a3e635",
+      color: "#c9a227",
       weight: 1,
       dashArray: "4 6",
-      fillColor: "#a3e635",
+      fillColor: "#c9a227",
       fillOpacity: 0.03,
       interactive: false,
     }).addTo(map);
@@ -478,39 +529,25 @@ export function EarthquakeMap({
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
       {!ready && !error && (
-        <div className="absolute inset-0 z-[600] flex items-center justify-center text-xs text-muted">
-          Memuat peta…
+        <div className="absolute inset-0 z-[600] flex items-center justify-center text-sm text-muted">
+          Memuat peta
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 z-[600] flex items-center justify-center p-6 text-center text-xs text-red-400">
-          Peta gagal dimuat: {error}
+        <div role="alert" className="absolute inset-0 z-[600] flex items-center justify-center p-6 text-center text-sm text-danger">
+          Peta belum bisa dimuat.
         </div>
       )}
 
-      <div className="pointer-events-none absolute bottom-6 left-3 z-[600] rounded-lg border border-border bg-surface/90 px-3 py-2 text-[11px] backdrop-blur">
+      <div className="pointer-events-none absolute bottom-6 left-3 z-[600] rounded-sm border border-border bg-surface px-3 py-2 text-xs">
         <p className="mb-1 font-medium text-foreground">Magnitudo</p>
-        <ul className="space-y-0.5 text-muted">
-          <li>
-            <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-[#38bdf8]" />
-            &lt; 3
-          </li>
-          <li>
-            <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-[#a3e635]" />
-            3 – 4
-          </li>
-          <li>
-            <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-[#fbbf24]" />
-            4 – 5
-          </li>
-          <li>
-            <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-[#f97316]" />
-            5 – 6
-          </li>
-          <li>
-            <span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-[#ef4444]" />
-            ≥ 6
-          </li>
+        <ul className="num space-y-0.5 text-muted">
+          {MAGNITUDE_BUCKETS.map((bucket) => (
+            <li key={bucket.label} className="flex items-center gap-2">
+              <span aria-hidden="true" className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: bucket.color }} />
+              {bucket.label}
+            </li>
+          ))}
         </ul>
       </div>
     </div>

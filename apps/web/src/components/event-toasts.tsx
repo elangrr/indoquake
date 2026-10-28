@@ -1,7 +1,8 @@
 "use client";
 
 import type { EarthquakeEvent } from "@indoquake/shared";
-import { formatMagnitude, magnitudeColor } from "@/lib/magnitude";
+import { formatWibClock } from "@/lib/wib";
+import { MagBadge } from "./mag-badge";
 
 export interface ToastItem {
   id: string;
@@ -16,31 +17,24 @@ interface EventToastsProps {
 export function EventToasts({ items, onSelect }: EventToastsProps) {
   if (items.length === 0) return null;
   return (
-    <div className="pointer-events-none absolute right-3 top-3 z-10 flex w-[280px] flex-col gap-2">
+    <div className="fixed right-4 bottom-20 left-4 z-[950] flex flex-col gap-2 sm:top-20 sm:bottom-auto sm:left-auto sm:w-80">
       {items.map((item) => (
         <button
           key={item.id}
           type="button"
+          data-testid="toast"
           onClick={() => onSelect(item.event.eventKey)}
-          className="pointer-events-auto rounded-lg border border-accent/60 bg-surface/95 p-3 text-left shadow-lg backdrop-blur"
+          className="border-l-2 border-signal bg-surface p-3 text-left shadow-[var(--shadow-float)] transition-colors duration-150 hover:bg-surface-2"
         >
-          <div className="flex items-center gap-2">
-            <span
-              className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-[#0b0f14]"
-              style={{ backgroundColor: magnitudeColor(item.event.magnitude) }}
-            >
-              M{formatMagnitude(item.event.magnitude)}
-            </span>
-            <span className="text-[11px] font-medium text-accent">
-              GEMPA BARU
-            </span>
-          </div>
-          <p className="mt-1.5 line-clamp-2 text-xs text-foreground">
-            {item.event.regionName}
-          </p>
-          <p className="mt-1 text-[11px] text-muted">
-            {item.event.eventTimeWib} · kedalaman {item.event.depthKm} km
-          </p>
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold text-signal">Gempa baru</span>
+            <span className="num text-xs text-muted">{formatWibClock(item.event.eventTimeUtc)}</span>
+          </span>
+          <span className="mt-1 flex items-center gap-2">
+            <MagBadge magnitude={item.event.magnitude} />
+            <span className="num text-xs text-muted">{item.event.depthKm} km</span>
+          </span>
+          <span className="mt-1 line-clamp-2 block text-sm text-foreground">{item.event.regionName}</span>
         </button>
       ))}
     </div>

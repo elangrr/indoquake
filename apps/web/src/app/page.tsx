@@ -6,12 +6,13 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let events: EarthquakeEvent[] = [];
-  let dataError: string | null = null;
+  let dataError = false;
 
   try {
-    events = await listEarthquakes({ limit: 300 });
-  } catch (error) {
-    dataError = error instanceof Error ? error.message : String(error);
+    events = await listEarthquakes({ limit: 100 });
+  } catch {
+    // The dashboard loads the list from the API in the browser instead.
+    dataError = true;
   }
 
   return <Dashboard initialEvents={events} dataError={dataError} />;
