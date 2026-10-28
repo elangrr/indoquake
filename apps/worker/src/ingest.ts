@@ -1,135 +1,103 @@
 import type { Logger } from "pino";
-import {
-  fetchBmkgFeed,
-  parseFeedPayload,
-  type BmkgFeedName,
-  type NormalizedEarthquake,
-} from "@indoquake/bmkg";
+import { BmkgHttpError, fetchBmkgFeed, parseFeedPayload } from "@indoquake/bmkg";
 import type { Database } from "@indoquake/database";
+import type { EarthquakeEvent, EarthquakeStreamPayload, FeedName } from "@indoquake/shared";
+import type { PollOutcome } from "./scheduler";
 import { upsertEarthquake } from "./store";
 
-const FEEDS: BmkgFeedName[] = ["autogempa", "gempaterkini", "gempadirasakan"];
-
-const FETCH_ATTEMPTS = 3;
-const FETCH_TIMEOUT_MS = 10_000;
-
-export interface EventChange {
-  type: "new" | "updated";
-  event: NormalizedEarthquake;
-}
-
-export type ChangeHandler = (change: EventChange) => void | Promise<void>;
-
-export interface FeedStatus {
-  fetched: boolean;
-  events: number;
-  error?: string;
-}
-
-export interface CycleSummary {
-  at: string;
-  ok: boolean;
+export interface IngestTotals {
   inserted: number;
   updated: number;
   unchanged: number;
-  durationMs: number;
-  feeds: Record<BmkgFeedName, FeedStatus>;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export interface FeedPollerDeps {
+  db: Database;
+  logger: Logger;
+  baseUrl: string;
+  /** Best effort, called after commit; failures are logged, the event_log row stays the source of truth. */
+  publish: (payload: EarthquakeStreamPayload) => Promise<void>;
+  notify: (event: EarthquakeEvent) => Promise<void>;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
 }
 
-async function fetchWithRetry(
-  feed: BmkgFeedName,
-  logger: Logger,
-): Promise<unknown> {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt += 1) {
+export interface FeedPoller {
+  poll: (feed: FeedName) => Promise<PollOutcome>;
+  totals: IngestTotals;
+}
+
+/**
+ * One poll of one feed: conditional GET, parse, store each record in its own transaction, then
+ * publish and notify outside the transaction. A 304 is a successful poll with nothing to parse.
+ */
+export function createFeedPoller(deps: FeedPollerDeps): FeedPoller {
+  const validators = new Map<FeedName, { etag: string | null; lastModified: string | null }>();
+  const totals: IngestTotals = { inserted: 0, updated: 0, unchanged: 0 };
+  const now = deps.now ?? Date.now;
+  const { logger } = deps;
+
+  async function poll(feed: FeedName): Promise<PollOutcome> {
+    let response;
     try {
-      return await fetchBmkgFeed(feed, { timeoutMs: FETCH_TIMEOUT_MS });
+      response = await fetchBmkgFeed(feed, {
+        baseUrl: deps.baseUrl,
+        etag: validators.get(feed)?.etag,
+        lastModified: validators.get(feed)?.lastModified,
+        fetchImpl: deps.fetchImpl,
+        now,
+      });
     } catch (error) {
-      lastError = error;
-      const backoffMs =
-        1000 * 2 ** (attempt - 1) + Math.round(Math.random() * 250);
-      logger.warn({ feed, attempt, backoffMs, err: error }, "bmkg_fetch_retry");
-      if (attempt < FETCH_ATTEMPTS) await sleep(backoffMs);
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
-}
-
-export async function runCycle(
-  db: Database,
-  logger: Logger,
-  onChange?: ChangeHandler,
-): Promise<CycleSummary> {
-  const startedAt = Date.now();
-  const summary: CycleSummary = {
-    at: new Date().toISOString(),
-    ok: true,
-    inserted: 0,
-    updated: 0,
-    unchanged: 0,
-    durationMs: 0,
-    feeds: {
-      autogempa: { fetched: false, events: 0 },
-      gempaterkini: { fetched: false, events: 0 },
-      gempadirasakan: { fetched: false, events: 0 },
-    },
-  };
-
-  for (const feed of FEEDS) {
-    try {
-      const payload = await fetchWithRetry(feed, logger);
-      const events = parseFeedPayload(payload, feed);
-      summary.feeds[feed] = { fetched: true, events: events.length };
-      for (const event of events) {
-        const result = await upsertEarthquake(db, event);
-        if (result === "inserted") {
-          summary.inserted += 1;
-          logger.info(
-            {
-              feed,
-              key: event.eventKey,
-              magnitude: event.magnitude,
-              region: event.regionName,
-            },
-            "earthquake_new",
-          );
-          await onChange?.({ type: "new", event });
-        } else if (result === "updated") {
-          summary.updated += 1;
-          logger.info(
-            { feed, key: event.eventKey, magnitude: event.magnitude },
-            "earthquake_updated",
-          );
-          await onChange?.({ type: "updated", event });
-        } else {
-          summary.unchanged += 1;
-        }
-      }
-    } catch (error) {
-      summary.ok = false;
-      summary.feeds[feed] = {
-        fetched: false,
-        events: 0,
-        error: error instanceof Error ? error.message : String(error),
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn({ feed, err: message }, "bmkg_fetch_failed");
+      return {
+        ok: false,
+        error: message,
+        retryAfterMs:
+          error instanceof BmkgHttpError && error.retryAfterSeconds !== null
+            ? error.retryAfterSeconds * 1000
+            : null,
       };
-      logger.error({ feed, err: error }, "bmkg_fetch_failed");
     }
+    if (response.status === "not-modified") return { ok: true };
+
+    const parsed = parseFeedPayload(response.payload, feed);
+    if (parsed.skipped > 0) {
+      logger.warn({ feed, skipped: parsed.skipped, reasons: parsed.skipReasons }, "bmkg_item_skipped");
+    }
+    for (const warning of parsed.warnings) logger.warn({ feed, warning }, "time_mismatch");
+
+    let stored = true;
+    for (const event of parsed.events) {
+      try {
+        const outcome = await upsertEarthquake(deps.db, event, { now: now() });
+        totals[outcome.result] += 1;
+        if (outcome.merge) logger.info({ feed, ...outcome.merge }, "dedup merge");
+        if (outcome.result !== "unchanged") {
+          logger.info(
+            { feed, key: outcome.event.eventKey, result: outcome.result, announce: outcome.announce, seq: outcome.seq },
+            outcome.result === "inserted" ? "earthquake_new" : "earthquake_updated",
+          );
+        }
+        if (outcome.payload) {
+          await deps.publish(outcome.payload).catch((error: unknown) => {
+            logger.warn({ feed, seq: outcome.seq, err: String(error) }, "publish_failed");
+          });
+        }
+        if (outcome.notify) {
+          await deps.notify(outcome.event).catch((error: unknown) => {
+            logger.warn({ feed, key: outcome.event.eventKey, err: String(error) }, "notify_failed");
+          });
+        }
+      } catch (error) {
+        stored = false;
+        logger.error({ feed, key: event.eventKey, err: String(error) }, "store_failed");
+      }
+    }
+    // Keep the validators only when everything was stored, so a failed write is re-fetched in full.
+    if (stored) validators.set(feed, { etag: response.etag, lastModified: response.lastModified });
+    return { ok: true };
   }
 
-  summary.durationMs = Date.now() - startedAt;
-  logger.info(
-    {
-      inserted: summary.inserted,
-      updated: summary.updated,
-      unchanged: summary.unchanged,
-      durationMs: summary.durationMs,
-      ok: summary.ok,
-    },
-    "cycle_done",
-  );
-  return summary;
+  return { poll, totals };
 }

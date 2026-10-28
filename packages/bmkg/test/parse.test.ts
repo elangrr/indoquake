@@ -81,7 +81,7 @@ describe("classifyTsunamiPotential", () => {
 
 describe("parseFeedPayload", () => {
   it("parses autogempa (single object)", () => {
-    const events = parseFeedPayload(autogempaFixture, "autogempa");
+    const { events } = parseFeedPayload(autogempaFixture, "autogempa");
     expect(events).toHaveLength(1);
     const event = events[0];
     expect(event?.magnitude).toBe(2.9);
@@ -98,7 +98,7 @@ describe("parseFeedPayload", () => {
   });
 
   it("parses gempaterkini (array)", () => {
-    const events = parseFeedPayload(gempaterkiniFixture, "gempaterkini");
+    const { events } = parseFeedPayload(gempaterkiniFixture, "gempaterkini");
     expect(events).toHaveLength(3);
     for (const event of events) {
       expect(event.magnitude).toBeGreaterThanOrEqual(5);
@@ -107,22 +107,22 @@ describe("parseFeedPayload", () => {
   });
 
   it("parses gempadirasakan (array with felt reports)", () => {
-    const events = parseFeedPayload(gempadirasakanFixture, "gempadirasakan");
+    const { events } = parseFeedPayload(gempadirasakanFixture, "gempadirasakan");
     expect(events).toHaveLength(4);
     const malang = events.find((event) => event.magnitude === 5.2);
     expect(malang?.feltReports.length).toBeGreaterThan(5);
   });
 
   it("detects tsunami potential from the synthetic fixture", () => {
-    const events = parseFeedPayload(tsunamiFixture, "autogempa");
+    const { events } = parseFeedPayload(tsunamiFixture, "autogempa");
     expect(events[0]?.tsunamiPotential).toBe(true);
   });
 
   it("skips malformed entries instead of throwing", () => {
-    const events = parseFeedPayload(
+    const parsed = parseFeedPayload(
       { Infogempa: { gempa: [{ Tanggal: "x" }] } },
       "autogempa",
     );
-    expect(events).toHaveLength(0);
+    expect(parsed).toEqual({ events: [], skipped: 1, skipReasons: ["invalid_datetime"], warnings: [] });
   });
 });

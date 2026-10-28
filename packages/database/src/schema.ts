@@ -1,8 +1,10 @@
 import {
+  bigserial,
   boolean,
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgTable,
   real,
   serial,
@@ -28,6 +30,7 @@ export const earthquakes = pgTable(
     feltText: text("felt_text"),
     shakemapUrl: text("shakemap_url"),
     source: text("source").notNull().default("BMKG"),
+    provinceSlug: text("province_slug"),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -45,6 +48,7 @@ export const earthquakes = pgTable(
     uniqueIndex("earthquakes_event_key_idx").on(table.eventKey),
     index("earthquakes_event_time_idx").on(table.eventTimeUtc),
     index("earthquakes_magnitude_idx").on(table.magnitude),
+    index("earthquakes_province_time_idx").on(table.provinceSlug, table.eventTimeUtc),
   ],
 );
 
@@ -71,18 +75,39 @@ export const earthquakeFeeds = pgTable(
   ],
 );
 
-export const earthquakeUpdates = pgTable("earthquake_updates", {
-  id: serial("id").primaryKey(),
-  earthquakeId: integer("earthquake_id")
-    .notNull()
-    .references(() => earthquakes.id, { onDelete: "cascade" }),
-  field: text("field").notNull(),
-  oldValue: text("old_value"),
-  newValue: text("new_value"),
-  observedAt: timestamp("observed_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const earthquakeUpdates = pgTable(
+  "earthquake_updates",
+  {
+    id: serial("id").primaryKey(),
+    earthquakeId: integer("earthquake_id")
+      .notNull()
+      .references(() => earthquakes.id, { onDelete: "cascade" }),
+    field: text("field").notNull(),
+    oldValue: text("old_value"),
+    newValue: text("new_value"),
+    observedAt: timestamp("observed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("earthquake_updates_eq_time_idx").on(table.earthquakeId, table.observedAt),
+  ],
+);
+
+/** Outbox of announced changes; id is the SSE id / payload seq. Pruned by the worker (EVENT_LOG_RETENTION_HOURS). */
+export const eventLog = pgTable(
+  "event_log",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    eventKey: text("event_key").notNull(),
+    type: text("type").$type<"new" | "updated">().notNull(),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("event_log_created_idx").on(table.createdAt)],
+);
 
 export const alertSubscriptions = pgTable(
   "alert_subscriptions",

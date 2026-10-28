@@ -1,4 +1,7 @@
+import { classifyTsunamiPotential } from "@indoquake/bmkg";
+
 export interface EarthquakeSnapshot {
+  eventTimeUtc: string;
   magnitude: number;
   depthKm: number;
   latitude: number;
@@ -21,15 +24,23 @@ export interface DiffResult {
   updates: Partial<EarthquakeSnapshot>;
 }
 
-type FieldPolicy = "numeric" | "overwrite" | "sticky";
+/**
+ * numeric / time: newest value wins (BMKG revises origin parameters) and logs a revision.
+ * sticky: first writer wins (feeds word the region differently).
+ * classified: potentialText is replaced whenever the incoming text states a tsunami potential
+ *   (true or false), so the text can never contradict the flag (D03); otherwise sticky.
+ * overwrite: any non-null incoming value wins (lets BMKG retract a tsunami flag).
+ */
+type FieldPolicy = "numeric" | "time" | "overwrite" | "sticky" | "classified";
 
 const FIELD_POLICIES: Record<keyof EarthquakeSnapshot, FieldPolicy> = {
+  eventTimeUtc: "time",
   magnitude: "numeric",
   depthKm: "numeric",
   latitude: "numeric",
   longitude: "numeric",
   regionName: "sticky",
-  potentialText: "sticky",
+  potentialText: "classified",
   feltText: "overwrite",
   shakemapUrl: "overwrite",
   tsunamiPotential: "overwrite",
@@ -43,41 +54,48 @@ function formatValue(value: number | string | boolean | null): string | null {
   return String(value);
 }
 
+function isEmpty(value: unknown): boolean {
+  return value === null || value === "";
+}
+
 export function diffSnapshots(
   existing: EarthquakeSnapshot,
   incoming: EarthquakeSnapshot,
 ): DiffResult {
   const changes: FieldChange[] = [];
   const updates: Partial<EarthquakeSnapshot> = {};
+  const record = (field: keyof EarthquakeSnapshot, oldValue: string | null, newValue: string | null) => {
+    changes.push({ field, oldValue, newValue });
+    Object.assign(updates, { [field]: incoming[field] });
+  };
 
   for (const field of Object.keys(FIELD_POLICIES) as (keyof EarthquakeSnapshot)[]) {
     const policy = FIELD_POLICIES[field];
+    const oldValue = existing[field];
+    const newValue = incoming[field];
+
+    if (policy === "time") {
+      const oldIso = new Date(oldValue as string).toISOString();
+      const newIso = new Date(newValue as string).toISOString();
+      if (oldIso !== newIso) record(field, oldIso, newIso);
+      continue;
+    }
     if (policy === "numeric") {
-      const oldValue = existing[field] as number;
-      const newValue = incoming[field] as number;
-      if (Math.abs(oldValue - newValue) > NUMERIC_EPSILON) {
-        changes.push({
-          field,
-          oldValue: formatValue(oldValue),
-          newValue: formatValue(newValue),
-        });
-        Object.assign(updates, { [field]: newValue });
+      if (Math.abs((oldValue as number) - (newValue as number)) > NUMERIC_EPSILON) {
+        record(field, formatValue(oldValue), formatValue(newValue));
       }
       continue;
     }
-
-    const oldValue = existing[field];
-    const newValue = incoming[field];
-    if (newValue === null) continue;
-    if (policy === "sticky" && oldValue !== null && oldValue !== "") continue;
-    if (oldValue !== newValue) {
-      changes.push({
-        field,
-        oldValue: formatValue(oldValue),
-        newValue: formatValue(newValue),
-      });
-      Object.assign(updates, { [field]: newValue });
+    if (newValue === null || oldValue === newValue) continue;
+    if (policy === "sticky" && !isEmpty(oldValue)) continue;
+    if (
+      policy === "classified" &&
+      !isEmpty(oldValue) &&
+      classifyTsunamiPotential(newValue as string) === null
+    ) {
+      continue;
     }
+    record(field, formatValue(oldValue), formatValue(newValue));
   }
 
   return { changes, updates };

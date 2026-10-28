@@ -9,9 +9,9 @@ import {
   type AlertEvent,
 } from "@indoquake/notifications";
 import { sendChannelMessage } from "@indoquake/notifications/senders";
-import type { NormalizedEarthquake } from "@indoquake/bmkg";
+import type { EarthquakeEvent } from "@indoquake/shared";
 
-export function toAlertEvent(event: NormalizedEarthquake): AlertEvent {
+export function toAlertEvent(event: EarthquakeEvent): AlertEvent {
   const resolution = resolveProvince(event.latitude, event.longitude);
   return {
     eventKey: event.eventKey,
@@ -29,7 +29,7 @@ export function toAlertEvent(event: NormalizedEarthquake): AlertEvent {
 
 export async function notifySubscriptions(
   db: Database,
-  event: NormalizedEarthquake,
+  event: EarthquakeEvent,
   logger: Logger,
 ): Promise<number> {
   let subscriptions: (typeof alertSubscriptions.$inferSelect)[];

@@ -8,7 +8,7 @@ const repoDir = process.argv[2] ?? process.cwd();
 
 const IPV4 = /(?<![\d.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\d.])/g;
 const PRIVATE_KEY = new RegExp("BEGIN [A-Z ]*" + "PRIVATE KEY");
-const PPK = /\.ppk\b/i;
+const PPK = new RegExp("\\." + "ppk\\b", "i"); // split so this file passes its own check
 const WINDOWS_USER_PATH = /[A-Za-z]:\\+Users\\+[^\\\s"']+/;
 const PASSWORD_LITERAL = /password\s*=\s*(?!\$\{|\$[A-Z_]|<|"?\s*$|'?\s*$)["']?[^\s"'#]+/i;
 
@@ -34,7 +34,7 @@ export function findIssues(path, text) {
       if (!allowedIp(octets)) issues.push(`${where}: IPv4 address ${match[0]}`);
     }
     if (PRIVATE_KEY.test(line)) issues.push(`${where}: private key block`);
-    if (PPK.test(line)) issues.push(`${where}: .ppk key file reference`);
+    if (PPK.test(line)) issues.push(`${where}: PuTTY key file reference`);
     if (WINDOWS_USER_PATH.test(line)) issues.push(`${where}: Windows user path`);
     if (PASSWORD_LITERAL.test(line)) issues.push(`${where}: literal password`);
   });
