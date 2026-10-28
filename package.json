@@ -11,7 +11,7 @@
     "dev": "npm run dev -w @indoquake/web",
     "dev:worker": "npm run dev -w @indoquake/worker",
     "build": "npm run build -w @indoquake/web",
-    "test": "npm run test --workspaces --if-present && vitest run --dir scripts",
+    "test": "npm run test --workspaces --if-present && vitest run --dir scripts && vitest run --config scripts/vitest.web-api.config.mjs",
     "lint": "eslint packages apps/worker scripts && npm run lint -w @indoquake/web",
     "typecheck": "npm exec -w @indoquake/web -- next typegen && npm run typecheck --workspaces --if-present && tsc --noEmit -p scripts",
     "db:generate": "npm run db:generate -w @indoquake/database",
