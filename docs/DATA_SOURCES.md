@@ -1,55 +1,48 @@
-# Sumber Data — Indoquake
+# Sumber data Indoquake
 
-## Sumber utama: BMKG
+## BMKG
 
-**BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)** adalah sumber resmi data
-gempa bumi yang digunakan aplikasi ini.
+Sumber resmi: BMKG (Badan Meteorologi, Klimatologi, dan Geofisika), https://data.bmkg.go.id/gempabumi/.
+Ketentuan: BMKG wajib dicantumkan sebagai sumber dan ditampilkan di aplikasi; batas akses 60 permintaan per menit
+per IP.
 
-> Wajib: cantumkan BMKG sebagai sumber data dan tampilkan pada aplikasi
-> (ketentuan halaman resmi `data.bmkg.go.id/gempabumi/`).
-
-### Feed yang dipakai
-
-| Feed | URL | Isi | Jumlah |
+| Feed | URL | Isi | Poll |
 | --- | --- | --- | --- |
-| Gempabumi Terbaru | `https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json` | Gempa terakhir (semua magnitudo) | 1 |
-| Gempabumi M 5.0+ | `https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json` | Daftar gempa M5+ | 15 |
-| Gempabumi Dirasakan | `https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json` | Daftar gempa dirasakan (MMI) | 15 |
+| autogempa | https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json | Gempa terakhir, semua magnitudo (1) | 10 s |
+| gempaterkini | https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json | 15 gempa M5+ terakhir | 20 s |
+| gempadirasakan | https://data.bmkg.go.id/DataMKG/TEWS/gempadirasakan.json | 15 gempa dirasakan terakhir (MMI) | 30 s |
 
-- Format alternatif: XML (`.xml`) dengan skema sama.
-- Shakemap (JPG): `https://static.bmkg.go.id/[kode_shakemap].jpg`
-- Pemutakhiran: setiap ada kejadian.
-- **Batas akses: 60 permintaan/menit/IP** — aplikasi hanya polling dari server
-  (~6 permintaan/menit) dan tidak pernah fetch langsung dari browser pengunjung.
-- Parser referensi resmi: `github.com/infoBMKG/data-gempabumi`
+- Total nominal 11 permintaan per menit; worker membatasi diri 30 per menit termasuk yang gagal. Tidak ada retry di
+  dalam satu siklus; jadwal berikutnya adalah retry. Timeout 8 s. Backoff per feed min(dasar x 2^n, 120 s) +-20%,
+  Retry-After dihormati (maks. 300 s). Feed dianggap down setelah 3 kegagalan beruntun.
+- Shakemap: https://static.bmkg.go.id/[kode].jpg.
+- Field: `DateTime` (ISO 8601 UTC, sumber kebenaran waktu), `Tanggal`/`Jam` (WIB, hanya teks cadangan; selisih
+  > 2 s dicatat sebagai `time_mismatch`), `Coordinates` ("lat,lon"; bila tidak ada dipakai `Lintang`/`Bujur`, misalnya
+  "7.22 LS", "107.62 BT"), `Magnitude` (-2 sampai 10), `Kedalaman` (0 sampai 1000 km), `Wilayah`, `Potensi`,
+  `Dirasakan`, `Shakemap`. Item yang gagal validasi dilewati dan dicatat (`bmkg_item_skipped`).
+- Feed tidak punya ID kejadian. Parameter awal dapat berubah beberapa menit setelah kejadian; Indoquake mencocokkan
+  rekaman dengan selisih waktu ≤ 60 s dan jarak ≤ 50 km ke baris yang sama dan menyimpan perubahan sebagai revisi.
+- Status tsunami hanya dari `Potensi` BMKG. Aplikasi tidak pernah menyatakan tsunami sendiri.
 
-### Field feed
+## Hasil pemeriksaan (28-10-2026, satu permintaan per cek)
 
-`Tanggal`, `Jam` (WIB), `DateTime` (ISO 8601 UTC), `Coordinates` (lintang,bujur),
-`Lintang`, `Bujur`, `Magnitude`, `Kedalaman` (km), `Wilayah`, `Potensi`
-(status tsunami & catatan dirasakan), `Dirasakan` (laporan MMI), `Shakemap`.
+- autogempa.json menjawab dengan `ETag` (weak), `Last-Modified` dan `Cache-Control: max-age=60` lewat Cloudflare.
+  `If-None-Match` dengan ETag itu dijawab 304. Worker mengirim validator bila ada dan tetap bekerja tanpa validator.
+- Karena cache CDN 60 s, gempa baru bisa terlambat sampai sekitar 1 menit dari sisi BMKG walaupun poll 10 s.
+- Jenis data "Berpotensi Tsunami" di halaman BMKG: BELUM DIKONFIRMASI sebagai file terpisah. Tiga file di atas adalah
+  yang terdaftar; tidak ada adapter baru.
+- Feed realtime (200 kejadian terakhir di bmkg.go.id): endpoint JSON BELUM DIKONFIRMASI, tidak dibangun.
 
-### Catatan penting
+## Sumber lain
 
-- Feed **tidak menyediakan ID kejadian** — Indoquake membuat `eventKey` sendiri
-  (hash dari waktu UTC + koordinat dibulatkan 2 desimal).
-- Parameter awal dapat **berubah** beberapa menit setelah kejadian sampai
-  ditinjau seismolog (pernyataan resmi InaTEWS). Perubahan disimpan sebagai
-  revisi dan ditandai di UI.
-
-## Sumber pendukung
-
-| Sumber | Kegunaan | Status |
-| --- | --- | --- |
-| InaTEWS (`inatews.bmkg.go.id`) | Status tsunami resmi | Fase 6 (spike) |
-| Repogempa (`repogempa.bmkg.go.id`) | Backfill katalog historis | Opsional, Fase 7 |
-| Batas administrasi provinsi | Deteksi provinsi | Fase 0 (dataset lokal) |
-| Garis pantai (Natural Earth 10m) | Jarak ke pantai (estimasi) | Fase 6 |
+| Sumber | Kegunaan |
+| --- | --- |
+| Batas administrasi provinsi Jawa (dataset lokal, packages/regions) | Kolom `province_slug` saat ingest |
+| Garis pantai (Natural Earth 10m, dataset lokal) | Estimasi jarak ke pantai |
+| Basemap CARTO | Ubin peta di browser |
 
 ## Aturan penyajian
 
-1. Data resmi BMKG selalu berlabel **RESMI BMKG**.
-2. Perhitungan aplikasi (jarak, ETA, estimasi MMI) selalu berlabel **ESTIMASI**
-   dengan rentang ketidakpastian — bukan prediksi, bukan peringatan resmi.
-3. Status tsunami **hanya** dari BMKG/InaTEWS — aplikasi tidak pernah
-   mendeklarasikan tsunami sendiri.
+1. Data resmi BMKG berlabel RESMI BMKG.
+2. Perhitungan aplikasi (jarak, ETA, estimasi MMI) berlabel ESTIMASI; bukan prediksi dan bukan peringatan resmi.
+3. Untuk peringatan resmi gempa dan tsunami, ikuti BMKG dan pihak berwenang setempat.
