@@ -20,7 +20,8 @@ import { createRetentionJob } from "../src/retention";
 import { upsertEarthquake } from "../src/store";
 import { feedBody, gempa, startMockBmkg, type MockBmkg } from "./support/mock-bmkg";
 
-const logger = pino({ level: "silent" });
+const logLines: string[] = [];
+const logger = pino({ level: "info" }, { write: (line: string) => void logLines.push(line) });
 const NOW = Date.parse("2026-10-28T12:00:00.000Z");
 const FIXTURES = new URL("../../../packages/bmkg/fixtures/", import.meta.url);
 const fixture = (name: string): unknown => JSON.parse(readFileSync(new URL(name, FIXTURES), "utf8"));
@@ -50,6 +51,7 @@ beforeEach(async () => {
   await db.delete(earthquakes);
   bmkg.routes.clear();
   bmkg.requests.length = 0;
+  logLines.length = 0;
 });
 
 function poller(options: { publish?: (p: EarthquakeStreamPayload) => Promise<void> } = {}) {
@@ -98,6 +100,16 @@ describe("ingest against PostGIS and a mock BMKG", () => {
     const fields = await db.select({ field: earthquakeUpdates.field }).from(earthquakeUpdates);
     expect(fields.map((row) => row.field).sort()).toEqual(["eventTimeUtc", "latitude", "longitude", "magnitude"]);
     expect(await logTypes()).toEqual(["new", "updated"]);
+    const merges = logLines.map((line) => JSON.parse(line)).filter((line) => line.msg === "dedup merge");
+    expect(merges).toEqual([
+      expect.objectContaining({
+        storedKey: published[0]?.event.eventKey,
+        timeDeltaSeconds: -20,
+        magnitudeDelta: 0.2,
+        distanceKm: expect.any(Number),
+        incomingKey: expect.stringMatching(/^[0-9a-f]{16}$/),
+      }),
+    ]);
   });
 
   it("A-04: ten concurrent upserts of one new event give one row and one event_log 'new'", async () => {
