@@ -1,0 +1,22 @@
+{
+  "name": "@indoquake/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:int": "VITEST_INTEGRATION=1 vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@indoquake/database": "*",
+    "@indoquake/earthquake": "*",
+    "@indoquake/regions": "*",
+    "@indoquake/shared": "*",
+    "drizzle-orm": "^0.45.2",
+    "ioredis": "^6.0.0"
+  }
+}

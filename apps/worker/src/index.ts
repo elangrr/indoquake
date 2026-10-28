@@ -1,7 +1,8 @@
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import pino from "pino";
-import { createDb, runMigrations } from "@indoquake/database";
+import { createDb } from "@indoquake/database";
+import { runMigrations } from "@indoquake/database/migrate";
 import { BMKG_ATTRIBUTION, EVENT_CHANNEL, type FeedName } from "@indoquake/shared";
 import { backfillProvinces } from "./backfill";
 import { loadConfig } from "./env";

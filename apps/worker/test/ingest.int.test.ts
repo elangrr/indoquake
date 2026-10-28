@@ -7,9 +7,9 @@ import {
   earthquakes,
   earthquakeUpdates,
   eventLog,
-  runMigrations,
   type Database,
 } from "@indoquake/database";
+import { runMigrations } from "@indoquake/database/migrate";
 import { startPostgis, type StartedPostgis } from "@indoquake/database/test-support";
 import type { NormalizedEarthquake } from "@indoquake/bmkg";
 import type { EarthquakeEvent, EarthquakeStreamPayload, FeedName } from "@indoquake/shared";

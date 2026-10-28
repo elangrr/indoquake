@@ -4,6 +4,10 @@
 # GATE_INSTALL=ci (default) | install | skip
 set -u
 cd "$(dirname "$0")/.."
+# Few build workers by default: every Next build worker starts its own thread pool, and small
+# sandboxes cap the number of threads. Override with NEXT_BUILD_CPUS.
+export NEXT_BUILD_CPUS="${NEXT_BUILD_CPUS:-4}"
+export NEXT_TELEMETRY_DISABLED=1
 
 RUN_UNIT=1
 RUN_INT=0

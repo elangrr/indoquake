@@ -145,15 +145,8 @@ export function countByDay(
   days = 30,
   referenceIso?: string,
 ): { date: string; count: number }[] {
-  const reference = referenceIso
-    ? new Date(referenceIso)
-    : new Date(
-        events.length > 0
-          ? events
-              .map((event) => new Date(event.eventTimeUtc).getTime())
-              .reduce((a, b) => Math.max(a, b), 0)
-          : Date.now(),
-      );
+  // Ends at today's WIB date (not the newest event), so quiet recent days show as zero (D14).
+  const reference = referenceIso ? new Date(referenceIso) : new Date();
 
   const buckets: { date: string; count: number }[] = [];
   const index = new Map<string, number>();
@@ -201,4 +194,26 @@ export function countByProvince(
       count: counts.get(province.slug) ?? 0,
     }))
     .sort((a, b) => b.count - a.count);
+}
+
+/** Counts per WIB month ("YYYY-MM") for the last `months` months ending with the reference month, zeros included. */
+export function countByMonth(
+  events: Pick<StatEvent, "eventTimeUtc">[],
+  months = 12,
+  referenceIso?: string,
+): { month: string; count: number }[] {
+  const reference = wibDate(referenceIso ?? new Date().toISOString());
+  const buckets: { month: string; count: number }[] = [];
+  const index = new Map<string, number>();
+  for (let offset = months - 1; offset >= 0; offset -= 1) {
+    const day = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() - offset, 1));
+    const key = day.toISOString().slice(0, 7);
+    index.set(key, buckets.length);
+    buckets.push({ month: key, count: 0 });
+  }
+  for (const event of events) {
+    const position = index.get(wibDateKey(event.eventTimeUtc).slice(0, 7));
+    if (position !== undefined) buckets[position].count += 1;
+  }
+  return buckets;
 }

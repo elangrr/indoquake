@@ -39,13 +39,7 @@ export async function GET(request: NextRequest) {
     });
     cache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, data });
     return NextResponse.json({ data, meta: { query, cached: false } });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        data: [],
-        error: error instanceof Error ? error.message : String(error),
-      },
-      { status: 502 },
-    );
+  } catch {
+    return NextResponse.json({ data: [], error: "Pencarian lokasi gagal" }, { status: 502 });
   }
 }

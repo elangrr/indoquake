@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import postgres from "postgres";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MIGRATIONS_FOLDER, runMigrations } from "../src";
+import { MIGRATIONS_FOLDER, runMigrations } from "../src/migrate";
 import { startPostgis, type StartedPostgis } from "../test-support/containers";
 
 let pg: StartedPostgis;

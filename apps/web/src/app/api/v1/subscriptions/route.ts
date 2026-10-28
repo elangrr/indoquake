@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
+import { clientIp, RATE_LIMITS, rateLimitResponse } from "@indoquake/api";
 import { alertSubscriptions } from "@indoquake/database";
 import { PROVINCE_OPTIONS } from "@indoquake/regions";
 import { getDb } from "@/lib/db";
+import { getRedis } from "@/lib/redis";
 import { validateChannelTarget } from "@/lib/subscription-validation";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,15 @@ interface SubscriptionBody {
   longitude?: number | null;
 }
 
+/** Upper bound on active subscriptions, so an abuser cannot fill the table (D15). */
+const MAX_ACTIVE_SUBSCRIPTIONS = 5_000;
+
 export async function POST(request: NextRequest) {
+  const limited = await rateLimitResponse(getRedis(), [
+    { rule: RATE_LIMITS.subscribe, key: clientIp(request.headers) },
+  ]);
+  if (limited) return limited;
+
   let body: SubscriptionBody;
   try {
     body = (await request.json()) as SubscriptionBody;
@@ -90,6 +100,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const [active] = await getDb()
+      .select({ n: count() })
+      .from(alertSubscriptions)
+      .where(eq(alertSubscriptions.active, true));
+    if ((active?.n ?? 0) >= MAX_ACTIVE_SUBSCRIPTIONS) {
+      return NextResponse.json({ error: "Langganan baru belum bisa diterima" }, { status: 503 });
+    }
     const [row] = await getDb()
       .insert(alertSubscriptions)
       .values({
@@ -119,16 +136,8 @@ export async function POST(request: NextRequest) {
       })
       .returning();
     return NextResponse.json({ data: row }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Gagal menyimpan langganan",
-      },
-      { status: 500 },
-    );
+  } catch {
+    return NextResponse.json({ error: "Gagal menyimpan langganan" }, { status: 500 });
   }
 }
 
