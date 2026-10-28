@@ -13,6 +13,7 @@
     "fonts:sync": "node scripts/sync-fonts.mjs"
   },
   "dependencies": {
+    "@indoquake/api": "*",
     "@indoquake/bmkg": "*",
     "@indoquake/database": "*",
     "@indoquake/earthquake": "^0.1.0",
