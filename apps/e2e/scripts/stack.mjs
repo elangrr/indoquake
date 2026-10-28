@@ -62,7 +62,7 @@ export async function seed(databaseUrl, count = 120) {
   const sql = postgres(databaseUrl, { max: 1 });
   const now = Date.now();
   const rows = Array.from({ length: count }, (_, index) => {
-    const [place, direction, lat, lon] = REGIONS[index % REGIONS.length];
+    const [place, direction, lat, lon, provinceSlug] = REGIONS[index % REGIONS.length];
     const at = new Date(now - index * 5.5 * 3_600_000 - 7 * 60_000);
     const magnitude = Math.round((2.6 + ((index * 37) % 34) / 10) * 10) / 10;
     const offset = ((index * 13) % 40) / 100;
@@ -80,6 +80,7 @@ export async function seed(databaseUrl, count = 120) {
       felt_text: magnitude >= 4.5 ? `III ${place.replace("Kab. ", "")}` : null,
       shakemap_url: null,
       source: "BMKG",
+      province_slug: provinceSlug,
     };
   });
   await sql`insert into earthquakes ${sql(rows)}`;
