@@ -6,8 +6,15 @@
     "adm1": "ADM1/geoBoundaries-IDN-ADM1_simplified.geojson",
     "adm2": "ADM2/geoBoundaries-IDN-ADM2_simplified.geojson"
   },
-  "attribution": "geoBoundaries (CC BY 4.0)",
+  "attribution": "Batas provinsi: geoBoundaries; © OpenStreetMap contributors (ODbL); BPS/OCHA (CC BY 3.0 IGO)",
   "adm1Replaced": ["ID-PA", "ID-PB"],
+  "adm2Added": [
+    {
+      "slug": "dki-jakarta",
+      "note": "ADM1 DKI (2017) holds the mainland and one islet only; the Kepulauan Seribu islands come from ADM2 (review t_4ad96343 finding 2).",
+      "regencies": ["Kepulauan Seribu"]
+    }
+  ],
   "papua": [
     {
       "slug": "papua-selatan",

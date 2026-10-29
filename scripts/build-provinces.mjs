@@ -286,6 +286,16 @@ export async function build({ input, out, quiet }) {
     features.push({ type: "Feature", properties: { slug: row.slug }, geometry: matches[0].geometry });
   }
 
+  // Islands ADM1 lacks, appended as extra rings from ADM2 (Kepulauan Seribu -> dki-jakarta).
+  for (const addition of CONFIG.adm2Added) {
+    const feature = features.find((f) => f.properties.slug === addition.slug);
+    for (const name of addition.regencies) {
+      const matches = adm2.features.filter((f) => f.properties?.shapeName === name);
+      if (matches.length !== 1) fail(`kabupaten/kota "${name}" (${addition.slug}) cocok dengan ${matches.length} fitur ADM2, harus 1`);
+      feature.geometry = { type: "MultiPolygon", coordinates: [...polygonsOf(feature.geometry), ...polygonsOf(matches[0].geometry)] };
+    }
+  }
+
   // The 6 Papua-region provinces dissolved from 42 ADM2 regencies (UU 14, 15, 16, 29 of 2022).
   const used = new Set();
   const regencies = [];

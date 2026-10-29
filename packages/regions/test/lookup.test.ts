@@ -50,6 +50,10 @@ describe("assignArea: city centres are land (AC 5)", () => {
   it("a point exactly on a coast vertex of Bali is land", () => {
     expect(assignArea(-8.4962, 114.9525)).toMatchObject({ kind: "land", provinceSlug: "bali" });
   });
+
+  it("Pulau Pramuka (Kepulauan Seribu, from ADM2) is land of DKI Jakarta, snapped to its simplified ring", () => {
+    expect(assignArea(-5.7453, 106.6136)).toEqual({ kind: "land", provinceSlug: "dki-jakarta", snapped: true });
+  });
 });
 
 describe("assignArea: coast snap, sea and invalid input (AC 6)", () => {

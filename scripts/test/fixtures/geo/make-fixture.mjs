@@ -42,6 +42,8 @@ for (const group of config.papua) {
     papuaSquares[group.slug === "papua-barat" || group.slug === "papua-barat-daya" ? "ID-PB" : "ID-PA"].push(polygon);
   });
 }
+// Kepulauan Seribu (ADM2), appended to dki-jakarta by the generator: a square around Pulau Pramuka.
+adm2.push({ type: "Feature", properties: { shapeName: "Kepulauan Seribu", shapeID: `FIX-${adm2.length}`, shapeType: "ADM2" }, geometry: { type: "Polygon", coordinates: square(-5.7453, 106.6136) } });
 adm1.push({ type: "Feature", properties: { shapeName: "Papua", shapeISO: "ID-PA", shapeType: "ADM1" }, geometry: { type: "MultiPolygon", coordinates: papuaSquares["ID-PA"] } });
 adm1.push({ type: "Feature", properties: { shapeName: "West Papua", shapeISO: "ID-PB", shapeType: "ADM1" }, geometry: { type: "MultiPolygon", coordinates: papuaSquares["ID-PB"] } });
 writeFileSync(`${HERE}geoBoundaries-IDN-ADM1_simplified.geojson`, `${JSON.stringify({ type: "FeatureCollection", features: adm1 })}\n`);

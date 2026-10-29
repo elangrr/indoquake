@@ -8,7 +8,7 @@ const REPO = join(import.meta.dirname, "..", "..", "..");
 const read = (relative: string) => readFileSync(join(REPO, relative), "utf8");
 const json = (relative: string) => JSON.parse(read(relative)) as Record<string, unknown>;
 const SLUGS = PROVINCE_OPTIONS.map((province) => province.slug);
-const ATTRIBUTION = { attribution: "geoBoundaries (CC BY 4.0)", source: "geoBoundaries gbOpen IDN, commit 9469f09592ced973a3448cf66b6100b741b64c0d" };
+const ATTRIBUTION = { attribution: "Batas provinsi: geoBoundaries; © OpenStreetMap contributors (ODbL); BPS/OCHA (CC BY 3.0 IGO)", source: "geoBoundaries gbOpen IDN, commit 9469f09592ced973a3448cf66b6100b741b64c0d" };
 
 interface LookupFile {
   provinces: { slug: string; polygons: number[][][][] }[];
@@ -94,8 +94,11 @@ describe("DATA_SOURCES.md (AC 12)", () => {
     expect(row).toContain("| 29-10-2026 |");
   });
 
-  it("states CC BY 4.0, the release, the measured displacement and SNAP_KM", () => {
-    expect(doc).toContain("geoBoundaries CC BY 4.0");
+  it("states the D32 licences and credit, the release, the measured displacement and SNAP_KM", () => {
+    expect(doc).toContain("ADM1 IDN-ADM1-65028918 bersumber dari OpenStreetMap (Wambacher), ODbL 1.0");
+    expect(doc).toContain("IDN-ADM2-22746128 bersumber dari BPS/WFP/OCHA, CC BY 3.0 IGO");
+    expect(doc).toContain("dirilis di bawah ODbL 1.0");
+    expect(doc).toContain('"Batas provinsi: geoBoundaries; © OpenStreetMap contributors (ODbL); BPS/OCHA (CC BY 3.0 IGO)"');
     expect(doc).toContain("commit 9469f09592ced973a3448cf66b6100b741b64c0d");
     expect(doc).toContain("Pergeseran maksimum lapisan lookup terhadap input geoBoundaries: 0,205 km");
     expect(doc).toContain("SNAP_KM = 2");

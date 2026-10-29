@@ -49,8 +49,8 @@ Input yang sama menghasilkan byte yang sama. sha256 lengkap ada di `packages/reg
 
 | Input | URL | Rilis / commit | Diunduh | Lisensi | sha256 (12) |
 | --- | --- | --- | --- | --- | --- |
-| geoBoundaries-IDN-ADM1_simplified.geojson | https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IDN/ADM1/geoBoundaries-IDN-ADM1_simplified.geojson | gbOpen commit 9469f09592ced973a3448cf66b6100b741b64c0d | 29-10-2026 | geoBoundaries CC BY 4.0 (sumber asli: OpenStreetMap, ODbL 1.0) | 5a6be3d14841 |
-| geoBoundaries-IDN-ADM2_simplified.geojson | https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IDN/ADM2/geoBoundaries-IDN-ADM2_simplified.geojson | gbOpen commit 9469f09592ced973a3448cf66b6100b741b64c0d | 29-10-2026 | geoBoundaries CC BY 4.0 (sumber asli: BPS, WFP, OCHA ROAP, CC BY 3.0 IGO) | 146653d48833 |
+| geoBoundaries-IDN-ADM1_simplified.geojson | https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IDN/ADM1/geoBoundaries-IDN-ADM1_simplified.geojson | gbOpen commit 9469f09592ced973a3448cf66b6100b741b64c0d | 29-10-2026 | ODbL 1.0 (sumber: OpenStreetMap, Wambacher; boundaryID IDN-ADM1-65028918) | 5a6be3d14841 |
+| geoBoundaries-IDN-ADM2_simplified.geojson | https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/IDN/ADM2/geoBoundaries-IDN-ADM2_simplified.geojson | gbOpen commit 9469f09592ced973a3448cf66b6100b741b64c0d | 29-10-2026 | CC BY 3.0 IGO (sumber: BPS, WFP, OCHA ROAP; boundaryID IDN-ADM2-22746128) | 146653d48833 |
 | ne_10m_coastline.geojson | https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_coastline.geojson | Natural Earth v5.1.2, commit f1890d9f152c896d250a77557a5751a93d494776 | 29-10-2026 | public domain | 6f75ae0e0de1 |
 
 - Vintage: ADM1 boundaryYearRepresented 2017, 34 fitur (sebelum pemekaran Papua 2022), boundaryID IDN-ADM1-65028918.
@@ -58,9 +58,13 @@ Input yang sama menghasilkan byte yang sama. sha256 lengkap ada di `packages/reg
   geoBoundaries 12-12-2023, metadata API geoboundaries.org/api/current/gbOpen/IDN/ADM1 dan ADM2).
 - 32 provinsi diambil dari ADM1 (dicocokkan lewat kode ISO 3166-2 `shapeISO`). Papua dan Papua Barat ADM1 tidak dipakai;
   enam provinsi Papua dibangun dengan dissolve 42 fitur ADM2 (kabupaten/kota) per undang-undang 2022.
-- Lisensi: atribusi yang ditampilkan adalah "geoBoundaries (CC BY 4.0)" (DECISIONS D2, D25). Metadata geoBoundaries
-  untuk rilis ini mencatat lisensi sumber asli ADM1 sebagai ODbL 1.0 (OpenStreetMap, Wambacher) dan ADM2 sebagai
-  CC BY 3.0 IGO. Belum diputuskan apakah atribusi perlu menyebut OpenStreetMap; lihat docs/handoff/R137-P0.md.
+- DKI Jakarta: ADM1 hanya berisi daratan dan satu pulau kecil, jadi ring Kabupaten Kepulauan Seribu dari ADM2
+  (72 ring, commit 9469f09 yang sama) ditambahkan ke dki-jakarta (`adm2Added` di build-config.json).
+- Lisensi (DECISIONS D32): ADM1 IDN-ADM1-65028918 bersumber dari OpenStreetMap (Wambacher), ODbL 1.0. ADM2
+  IDN-ADM2-22746128 bersumber dari BPS/WFP/OCHA, CC BY 3.0 IGO. File provinsi dan lookup yang dihasilkan
+  (provinces-lookup.json, provinces-meta.json, provinsi.json, provinsi/<slug>.json) dirilis di bawah ODbL 1.0.
+  Atribusi yang ditampilkan dan disimpan di setiap file hasil (konstanta `GEOBOUNDARIES_ATTRIBUTION`):
+  "Batas provinsi: geoBoundaries; © OpenStreetMap contributors (ODbL); BPS/OCHA (CC BY 3.0 IGO)".
 
 Pemetaan kabupaten/kota Papua 2022 (setiap baris dicek ke sumber pemerintah, 29-10-2026):
 
@@ -98,6 +102,14 @@ Peta menampilkan lapisan tampilan (interval 2000 m) dan file detail (300 m), sed
 lapisan lookup server (200 m, maksimal 500 m). Garis yang digambar bisa bergeser sampai sekitar 2 km dari garis lookup,
 jadi gempa yang hanya beberapa km dari batas provinsi bisa tampak berada di garis provinsi tetangga. Penentuan provinsi
 oleh server (kolom `province_slug`, `area_kind`) yang berlaku; browser tidak pernah menentukan provinsi sendiri.
+
+### Batasan: pulau kecil yang tidak ada di ADM1
+
+ADM1 geoBoundaries (sumber OpenStreetMap 2017) tidak memuat sebagian pulau kecil. Kepulauan Seribu sudah ditambahkan
+dari ADM2 (di atas); pulau lain tidak. Probe review t_4ad96343 (sebelum penambahan Kepulauan Seribu) menemukan 371
+poligon pulau kecil ADM2, sekitar 219 km2, yang berjarak lebih dari 10 km dari provinsi mana pun di lookup, misalnya
+Kepulauan Balabalakang (Mamuju) dan pulau-pulau kecil Banggai Laut. Kekurangan ini ada di sumber ADM1, bukan akibat
+penyederhanaan. Gempa di pulau seperti itu disimpan sebagai Laut/Perairan dengan provinsi terdekat dan jaraknya.
 
 ### Batasan: daratan negara lain
 
