@@ -11,7 +11,8 @@ import {
 } from "@indoquake/earthquake";
 import { formatDurationId } from "@indoquake/geo";
 import type { DistanceInfo } from "@/lib/distances";
-import { formatCountdown, formatWibTime } from "@/lib/format-time";
+import { formatZoned, type ZoneId } from "@indoquake/regions/meta";
+import { formatCountdown } from "@/lib/format-time";
 import { MagBadge } from "./mag-badge";
 import type { ReplayState } from "@/lib/replay";
 
@@ -27,6 +28,8 @@ interface EtaPanelProps {
   feltPending: number;
   feltRadiusKm: number | null;
   feltRadiusSource: "bmkg" | "estimate" | null;
+  /** Zone of the user's location (GET /api/v1/area), else the event's zone. */
+  timeZone: ZoneId;
 }
 
 export function EtaPanel({
@@ -41,7 +44,9 @@ export function EtaPanel({
   feltPending,
   feltRadiusKm,
   feltRadiusSource,
+  timeZone,
 }: EtaPanelProps) {
+  const clock = (iso: string) => formatZoned(iso, timeZone, "clock");
   const [, setTick] = useState(0);
   const [replayStatus, setReplayStatus] = useState<string | null>(null);
 
@@ -161,8 +166,8 @@ export function EtaPanel({
               {formatCountdown(estimate.secondsUntilS)}
             </p>
             <p className="mt-0.5 text-xs text-muted">
-              rentang {formatWibTime(estimate.sArrivalEarliestUtc)} sampai{" "}
-              {formatWibTime(estimate.sArrivalLatestUtc)}
+              rentang {clock(estimate.sArrivalEarliestUtc)} sampai{" "}
+              {clock(estimate.sArrivalLatestUtc)}
             </p>
           </>
         )}
@@ -239,13 +244,13 @@ export function EtaPanel({
         <div className="flex justify-between">
           <dt>Gelombang P tiba</dt>
           <dd className="text-foreground">
-            ≈ {formatWibTime(estimate.pArrivalUtc)}
+            ≈ {clock(estimate.pArrivalUtc)}
           </dd>
         </div>
         <div className="flex justify-between">
           <dt>Gelombang S tiba</dt>
           <dd className="text-foreground">
-            ≈ {formatWibTime(estimate.sArrivalUtc)}
+            ≈ {clock(estimate.sArrivalUtc)}
           </dd>
         </div>
         <div className="flex justify-between">

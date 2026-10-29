@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { EarthquakeEvent } from "@indoquake/shared";
-import { formatWibDateTime } from "@/lib/wib";
+import { eventAreaLabel, formatEventTime } from "@/lib/event-time";
 import { MagBadge } from "./mag-badge";
 import { Seismogram } from "./seismogram";
 
@@ -20,7 +20,7 @@ export function LatestQuake({
   return (
     <section aria-labelledby="gempa-terkini" className="px-4 pt-6 pb-4">
       <h1 id="gempa-terkini" className="text-sm font-medium text-muted">
-        Gempa terkini di Pulau Jawa
+        Gempa terkini di Indonesia
       </h1>
       {event ? (
         <div className="mt-2">
@@ -28,7 +28,13 @@ export function LatestQuake({
           <p className="mt-2 text-xl leading-snug font-semibold text-foreground">{event.regionName}</p>
           <dl className="num mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             <dt className="text-muted">Waktu</dt>
-            <dd>{formatWibDateTime(event.eventTimeUtc)}</dd>
+            <dd>{formatEventTime(event, "dateTime")}</dd>
+            {eventAreaLabel(event) && (
+              <>
+                <dt className="text-muted">Wilayah</dt>
+                <dd>{eventAreaLabel(event)}</dd>
+              </>
+            )}
             <dt className="text-muted">Kedalaman</dt>
             <dd>{event.depthKm} km</dd>
             <dt className="text-muted">Tsunami</dt>

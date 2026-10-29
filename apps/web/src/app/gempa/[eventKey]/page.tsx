@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BMKG_ATTRIBUTION, SAFETY_DISCLAIMER } from "@indoquake/shared";
 import { parseMmiString } from "@indoquake/earthquake";
+import { UNKNOWN_AREA_LABEL } from "@indoquake/regions/meta";
 import { MagBadge } from "@/components/mag-badge";
 import { loadEarthquakeDetail } from "@/lib/detail";
 import { formatMagnitude } from "@/lib/magnitude";
-import { formatWibDateTime, formatWibLong } from "@/lib/wib";
+import { eventAreaLabel, formatEventTime } from "@/lib/event-time";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = `M${formatMagnitude(event.magnitude)} ${event.regionName}`;
   return {
     title,
-    description: `Gempa M${formatMagnitude(event.magnitude)} kedalaman ${event.depthKm} km, ${formatWibDateTime(event.eventTimeUtc)}. Sumber data: BMKG.`,
+    description: `Gempa M${formatMagnitude(event.magnitude)} kedalaman ${event.depthKm} km, ${formatEventTime(event, "dateTime")}. Sumber data: BMKG.`,
     openGraph: { title },
   };
 }
@@ -58,11 +59,11 @@ export default async function EarthquakeDetailPage({ params }: Params) {
     (a, b) => (parseMmiString(b.mmi)?.max ?? 0) - (parseMmiString(a.mmi)?.max ?? 0),
   );
   const facts = [
-    { label: "Waktu", value: formatWibLong(event.eventTimeUtc) },
+    { label: "Waktu", value: formatEventTime(event, "long") },
     { label: "Waktu UTC", value: `${event.eventTimeUtc.slice(0, 19).replace("T", " ")} UTC` },
     { label: "Kedalaman", value: `${event.depthKm} km` },
     { label: "Koordinat", value: `${event.latitude.toFixed(2)}, ${event.longitude.toFixed(2)}` },
-    { label: "Provinsi", value: event.provinceName ?? "Di luar Pulau Jawa" },
+    { label: "Wilayah", value: eventAreaLabel(event) ?? UNKNOWN_AREA_LABEL },
   ];
   const tsunamiText =
     event.tsunamiPotential === true
@@ -81,7 +82,7 @@ export default async function EarthquakeDetailPage({ params }: Params) {
       <header className="pt-2 pb-6">
         <MagBadge magnitude={event.magnitude} size="lg" />
         <h1 className="mt-3 text-2xl leading-snug font-semibold text-foreground sm:text-4xl">{event.regionName}</h1>
-        <p className="num mt-2 text-sm text-muted">{formatWibDateTime(event.eventTimeUtc)}</p>
+        <p className="num mt-2 text-sm text-muted">{formatEventTime(event, "dateTime")}</p>
       </header>
 
       <Section title="Parameter gempa" tag="Resmi BMKG">
@@ -153,7 +154,7 @@ export default async function EarthquakeDetailPage({ params }: Params) {
                     <td className="py-2 pr-4">{FIELD_LABELS[revision.field] ?? revision.field}</td>
                     <td className="py-2 pr-4">{revision.oldValue ?? "kosong"}</td>
                     <td className="py-2 pr-4">{revision.newValue ?? "kosong"}</td>
-                    <td className="py-2">{formatWibDateTime(revision.observedAt)}</td>
+                    <td className="py-2">{formatEventTime(event, "dateTime", revision.observedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -167,7 +168,7 @@ export default async function EarthquakeDetailPage({ params }: Params) {
           <li>{BMKG_ATTRIBUTION}</li>
           <li>Feed: {event.feeds.length > 0 ? event.feeds.join(", ") : "tidak tercatat"}</li>
           <li className="num">Kode kejadian: {event.eventKey}</li>
-          {event.lastUpdatedAt && <li>Terakhir diperbarui: {formatWibDateTime(event.lastUpdatedAt)}</li>}
+          {event.lastUpdatedAt && <li>Terakhir diperbarui: {formatEventTime(event, "dateTime", event.lastUpdatedAt)}</li>}
         </ul>
       </Section>
     </article>

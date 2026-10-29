@@ -1,14 +1,3 @@
-export function formatWibTime(iso: string): string {
-  const formatted = new Intl.DateTimeFormat("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(new Date(iso));
-  return `${formatted} WIB`;
-}
-
 export function formatCountdown(totalSeconds: number): string {
   const seconds = Math.max(0, Math.ceil(totalSeconds));
   const minutes = Math.floor(seconds / 60);

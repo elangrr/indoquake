@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { EarthquakeEvent } from "@indoquake/shared";
 import type { DistanceMap } from "@/lib/distances";
 import type { UserLocation } from "@/lib/use-geolocation";
-import { formatWibDateTime } from "@/lib/wib";
+import { eventAreaLabel, formatEventTime } from "@/lib/event-time";
 import { MagBadge } from "./mag-badge";
 
 export type FeedFilter = "all" | "m5" | "felt" | "tsunami" | "near";
@@ -175,7 +175,7 @@ export function FeedPanel({
                 >
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <MagBadge magnitude={event.magnitude} size="md" />
-                    <span className="num text-xs text-muted">{formatWibDateTime(event.eventTimeUtc)}</span>
+                    <span className="num text-xs text-muted">{formatEventTime(event, "dateTime")}</span>
                     {event.tsunamiPotential === true && (
                       <span className="rounded-sm bg-danger-soft px-1.5 text-xs font-semibold text-danger">
                         Berpotensi tsunami
@@ -185,6 +185,7 @@ export function FeedPanel({
                   <span className="mt-1 block text-sm text-foreground">{event.regionName}</span>
                   <span className="num mt-1 block text-xs text-muted">
                     {event.depthKm} km
+                    {eventAreaLabel(event) ? ` · ${eventAreaLabel(event)}` : ""}
                     {event.feltText ? " · Dirasakan" : ""}
                     {distance ? ` · ${Math.round(distance.epicentralKm).toLocaleString("id-ID")} km dari Anda (estimasi)` : ""}
                   </span>

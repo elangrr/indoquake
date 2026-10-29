@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PROVINCE_OPTIONS, provinceBySlug } from "@indoquake/regions";
+import { PROVINCE_OPTIONS, provinceBySlug } from "@indoquake/regions/meta";
 import { PageHeading } from "@/components/page-heading";
 import { ProvinceEvents } from "@/components/province-events";
 

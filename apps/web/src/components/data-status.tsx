@@ -1,7 +1,7 @@
 "use client";
 
 import { deriveIndicator } from "@/lib/data-status";
-import { formatWibClock } from "@/lib/wib";
+import { formatZoned } from "@indoquake/regions/meta";
 import { useLive } from "./live-provider";
 
 const DOT: Record<string, string> = {
@@ -27,12 +27,12 @@ export function DataStatus() {
       </p>
       {freshness?.lastSuccessAt && (
         <p className="hidden md:block">
-          Diperbarui <span className="num">{formatWibClock(freshness.lastSuccessAt)}</span>
+          Diperbarui <span className="num">{formatZoned(freshness.lastSuccessAt, "WIB", "clock")}</span>
         </p>
       )}
       {freshness?.latestEventAt && (
         <p className="hidden lg:block">
-          Gempa terbaru <span className="num">{formatWibClock(freshness.latestEventAt)}</span>
+          Gempa terbaru <span className="num">{formatZoned(freshness.latestEventAt, "WIB", "clock")}</span>
         </p>
       )}
     </div>

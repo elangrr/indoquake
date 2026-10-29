@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PROVINCE_OPTIONS } from "@indoquake/regions";
+import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
 import { HistoryView } from "@/components/history-view";
 import { PageHeading } from "@/components/page-heading";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Riwayat gempa",
-  description: "Semua gempa Pulau Jawa yang tercatat dari BMKG, dengan saringan magnitudo, kedalaman, tanggal dan provinsi.",
+  description: "Semua gempa Indonesia yang tercatat dari BMKG, dengan saringan magnitudo, kedalaman, tanggal dan provinsi.",
 };
 
 export default function RiwayatPage() {

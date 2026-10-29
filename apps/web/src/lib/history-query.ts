@@ -1,4 +1,4 @@
-import { wibDayEndUtc, wibDayStartUtc } from "./wib";
+import { wibDayEndUtc, wibDayStartUtc } from "@indoquake/regions/meta";
 
 /** /riwayat URL parameters (names unchanged since the first version). */
 export interface HistoryFilters {

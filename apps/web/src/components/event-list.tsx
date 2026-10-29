@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { EarthquakeEvent } from "@indoquake/shared";
-import { formatWibDateTime } from "@/lib/wib";
+import { eventAreaLabel, formatEventTime } from "@/lib/event-time";
 import { MagBadge } from "./mag-badge";
 
 /** Read-only list of quakes; each row links to the detail page. */
@@ -16,7 +16,8 @@ export function EventList({ events }: { events: EarthquakeEvent[] }) {
             <MagBadge magnitude={event.magnitude} size="md" />
             <span className="text-sm text-foreground">{event.regionName}</span>
             <span className="num col-start-2 text-xs text-muted sm:col-start-auto sm:text-right">
-              {formatWibDateTime(event.eventTimeUtc)} · {event.depthKm} km
+              {formatEventTime(event, "dateTime")} · {event.depthKm} km
+              {eventAreaLabel(event) ? ` · ${eventAreaLabel(event)}` : ""}
               {event.tsunamiPotential === true ? " · Berpotensi tsunami" : ""}
             </span>
           </Link>

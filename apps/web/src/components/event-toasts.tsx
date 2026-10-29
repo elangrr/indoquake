@@ -1,7 +1,7 @@
 "use client";
 
 import type { EarthquakeEvent } from "@indoquake/shared";
-import { formatWibClock } from "@/lib/wib";
+import { formatEventTime } from "@/lib/event-time";
 import { MagBadge } from "./mag-badge";
 
 export interface ToastItem {
@@ -28,7 +28,7 @@ export function EventToasts({ items, onSelect }: EventToastsProps) {
         >
           <span className="flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-signal">Gempa baru</span>
-            <span className="num text-xs text-muted">{formatWibClock(item.event.eventTimeUtc)}</span>
+            <span className="num text-xs text-muted">{formatEventTime(item.event, "clock")}</span>
           </span>
           <span className="mt-1 flex items-center gap-2">
             <MagBadge magnitude={item.event.magnitude} />

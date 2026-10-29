@@ -1,13 +1,13 @@
 "use client";
 
 import { BMKG_HOME_URL } from "@/lib/site";
-import { formatWibHourMinute } from "@/lib/wib";
+import { formatZoned } from "@indoquake/regions/meta";
 import { useLive } from "./live-provider";
 
 export function DataBanner() {
   const { freshness } = useLive();
   if (freshness?.state !== "down") return null;
-  const since = freshness.lastSuccessAt ? ` sejak ${formatWibHourMinute(freshness.lastSuccessAt)}` : "";
+  const since = freshness.lastSuccessAt ? ` sejak ${formatZoned(freshness.lastSuccessAt, "WIB", "hourMinute")}` : "";
   return (
     <div role="alert" className="border-b border-danger bg-danger-soft">
       <p className="mx-auto max-w-screen-2xl px-4 py-2 text-sm text-foreground">

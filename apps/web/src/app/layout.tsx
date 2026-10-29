@@ -27,18 +27,18 @@ const figuresFont = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Indoquake · Gempa terkini Pulau Jawa",
+    default: "Indoquake · Gempa terkini Indonesia",
     template: "%s · Indoquake",
   },
   description:
-    "Gempa bumi dan status tsunami terkini di Pulau Jawa dari data terbuka BMKG, diperbarui langsung.",
+    "Gempa bumi dan status tsunami terkini di seluruh Indonesia dari data terbuka BMKG, diperbarui langsung.",
   openGraph: {
     type: "website",
     locale: "id_ID",
     siteName: "Indoquake",
-    title: "Indoquake · Gempa terkini Pulau Jawa",
+    title: "Indoquake · Gempa terkini Indonesia",
     description:
-      "Gempa bumi dan status tsunami terkini di Pulau Jawa dari data terbuka BMKG.",
+      "Gempa bumi dan status tsunami terkini di seluruh Indonesia dari data terbuka BMKG.",
     url: SITE_URL,
   },
   icons: { icon: "/icon.svg" },

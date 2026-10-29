@@ -91,6 +91,30 @@ function toFrames(revisions: Revision[]): EarthquakeEvent[] {
   });
 }
 
+describe("mergeEvent with a stream payload from before R137 (AC 24)", () => {
+  const NATIONAL: EarthquakeEvent = {
+    ...STORED,
+    provinceSlug: null,
+    provinceName: null,
+    areaKind: "sea",
+    nearestProvinceSlug: "jawa-timur",
+    nearestProvinceName: "Jawa Timur",
+    nearestProvinceKm: 64,
+    zone: "WIB",
+  };
+
+  it("keeps the stored area and zone when a legacy frame without the new fields arrives", () => {
+    const legacy = { ...STORED, magnitude: 5.3, lastUpdatedAt: "2026-10-28T01:09:00.000Z" };
+    expect(mergeEvent([NATIONAL], legacy)).toEqual([
+      { ...NATIONAL, magnitude: 5.3, lastUpdatedAt: "2026-10-28T01:09:00.000Z" },
+    ]);
+  });
+
+  it("adds a legacy frame for an unknown event as it is", () => {
+    expect(mergeEvent([], STORED)).toEqual([STORED]);
+  });
+});
+
 describe("mergeEvent properties", () => {
   it("is idempotent and independent of arrival order", () => {
     fc.assert(

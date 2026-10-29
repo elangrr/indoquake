@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PROVINCE_OPTIONS } from "@indoquake/regions";
+import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
 
 const inputClass =
   "mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground";

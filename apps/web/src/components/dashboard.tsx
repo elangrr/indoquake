@@ -22,6 +22,8 @@ import { LocationPanel } from "./location-panel";
 import { ErrorState } from "./error-state";
 import { distanceToCoastKm } from "@/lib/coastline";
 import { mergeEvent, mergeEvents } from "@/lib/merge-event";
+import { useArea } from "@/lib/use-area";
+import { zoneOfEvent } from "@indoquake/regions/meta";
 import { useIdle } from "@/lib/use-idle";
 import { buildDistanceMap, findNearest } from "@/lib/distances";
 import { readNotifySettings } from "@/lib/notify-settings";
@@ -135,6 +137,7 @@ export function Dashboard({
 
   const { status, location, error, request, clear, setManual } =
     useGeolocation();
+  const userArea = useArea(location);
   const { now: serverNow } = useServerTime();
   const felt = useFeltLocations(selectedKey, showFelt);
 
@@ -407,6 +410,7 @@ export function Dashboard({
               feltPending={felt.pending}
               feltRadiusKm={feltRadiusKm}
               feltRadiusSource={feltRadiusSource}
+              timeZone={userArea?.zone ?? (selectedEvent ? zoneOfEvent(selectedEvent) : "WIB")}
             />
           }
           tsunamiPanel={<TsunamiPanel event={selectedEvent} coastDistanceKm={coastDistanceKm} />}

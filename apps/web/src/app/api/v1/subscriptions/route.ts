@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { and, count, eq } from "drizzle-orm";
 import { clientIp, RATE_LIMITS, rateLimitResponse } from "@indoquake/api";
 import { alertSubscriptions } from "@indoquake/database";
-import { PROVINCE_OPTIONS } from "@indoquake/regions";
+import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
 import { getDb } from "@/lib/db";
 import { getRedis } from "@/lib/redis";
 import { validateChannelTarget } from "@/lib/subscription-validation";

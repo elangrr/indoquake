@@ -1,5 +1,5 @@
 import { apiError, getStatistics, json } from "@indoquake/api";
-import { provinceBySlug } from "@indoquake/regions";
+import { provinceBySlug } from "@indoquake/regions/meta";
 import { getDb } from "@/lib/db";
 import { parsePeriod } from "@/lib/period";
 

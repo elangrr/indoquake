@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Statistik gempa",
-  description: "Jumlah, magnitudo, kedalaman dan sebaran provinsi gempa Pulau Jawa per periode, dari data BMKG.",
+  description: "Jumlah, magnitudo, kedalaman dan sebaran provinsi gempa Indonesia per periode, dari data BMKG.",
 };
 
 export default function StatistikPage() {
