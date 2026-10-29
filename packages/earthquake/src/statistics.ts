@@ -5,6 +5,10 @@ export interface StatEvent {
   feltText: string | null;
   tsunamiPotential: boolean | null;
   provinceSlug?: string | null;
+  /** "land" | "sea"; null or absent = legacy row not yet re-assigned (R137). */
+  areaKind?: string | null;
+  nearestProvinceSlug?: string | null;
+  nearestProvinceKm?: number | null;
 }
 
 export interface StatisticsSummary {
@@ -14,6 +18,8 @@ export interface StatisticsSummary {
   countM5: number;
   countFelt: number;
   countTsunami: number;
+  /** Events assigned to the sea (Laut/Perairan), at any distance. */
+  countSea: number;
   strongestMagnitude: number | null;
   deepestKm: number | null;
   averageDepthKm: number | null;
@@ -29,6 +35,7 @@ export function summarize(events: StatEvent[]): StatisticsSummary {
       countM5: 0,
       countFelt: 0,
       countTsunami: 0,
+      countSea: 0,
       strongestMagnitude: null,
       deepestKm: null,
       averageDepthKm: null,
@@ -41,6 +48,7 @@ export function summarize(events: StatEvent[]): StatisticsSummary {
   let countM5 = 0;
   let countFelt = 0;
   let countTsunami = 0;
+  let countSea = 0;
   let strongest = -Infinity;
   let deepest = -Infinity;
   let magnitudeSum = 0;
@@ -52,6 +60,7 @@ export function summarize(events: StatEvent[]): StatisticsSummary {
     if (event.magnitude >= 5) countM5 += 1;
     if (event.feltText) countFelt += 1;
     if (event.tsunamiPotential === true) countTsunami += 1;
+    if (event.areaKind === "sea") countSea += 1;
     if (event.magnitude > strongest) strongest = event.magnitude;
     if (event.depthKm > deepest) deepest = event.depthKm;
     magnitudeSum += event.magnitude;
@@ -65,6 +74,7 @@ export function summarize(events: StatEvent[]): StatisticsSummary {
     countM5,
     countFelt,
     countTsunami,
+    countSea,
     strongestMagnitude: strongest,
     deepestKm: deepest,
     averageDepthKm: Math.round((depthSum / events.length) * 10) / 10,
@@ -178,20 +188,34 @@ export function countByHour(events: StatEvent[]): number[] {
   return hours;
 }
 
-export function countByProvince(
+/**
+ * One item per province in the given (table) order, zeros included, sorted by land count desc; ties keep
+ * table order. count = events whose provinceSlug is the province (land, and legacy rows by their stored
+ * slug); seaCount = sea events whose nearest province it is within nearSeaMaxKm.
+ */
+export function countByProvince<Zone extends string>(
   events: StatEvent[],
-  provinces: readonly { slug: string; name: string }[],
-): { slug: string; name: string; count: number }[] {
-  const counts = new Map<string, number>();
+  provinces: readonly { slug: string; name: string; zone: Zone }[],
+  nearSeaMaxKm: number,
+): { slug: string; name: string; zone: Zone; count: number; seaCount: number }[] {
+  const land = new Map<string, number>();
+  const sea = new Map<string, number>();
   for (const event of events) {
-    if (!event.provinceSlug) continue;
-    counts.set(event.provinceSlug, (counts.get(event.provinceSlug) ?? 0) + 1);
+    if (event.areaKind === "sea") {
+      const km = event.nearestProvinceKm;
+      if (!event.nearestProvinceSlug || km === null || km === undefined || km > nearSeaMaxKm) continue;
+      sea.set(event.nearestProvinceSlug, (sea.get(event.nearestProvinceSlug) ?? 0) + 1);
+    } else if (event.provinceSlug) {
+      land.set(event.provinceSlug, (land.get(event.provinceSlug) ?? 0) + 1);
+    }
   }
   return provinces
     .map((province) => ({
       slug: province.slug,
       name: province.name,
-      count: counts.get(province.slug) ?? 0,
+      zone: province.zone,
+      count: land.get(province.slug) ?? 0,
+      seaCount: sea.get(province.slug) ?? 0,
     }))
     .sort((a, b) => b.count - a.count);
 }

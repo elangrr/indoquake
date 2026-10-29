@@ -129,6 +129,69 @@ describe("GET /api/v1/statistics (A-17)", () => {
   });
 });
 
+describe("R137 province, area and nearProvince over land, sea and legacy rows (AC 16-18)", () => {
+  const land = (index: number, slug: string) =>
+    row(index, { provinceSlug: slug, areaKind: "land", nearestProvinceSlug: null, nearestProvinceKm: null, regionVersion: 1 });
+  const sea = (index: number, nearest: string, km: number) =>
+    row(index, { provinceSlug: null, areaKind: "sea", nearestProvinceSlug: nearest, nearestProvinceKm: km, regionVersion: 1 });
+  const legacy = (index: number, slug: string | null) =>
+    row(index, { provinceSlug: slug, areaKind: null, nearestProvinceSlug: null, nearestProvinceKm: null, regionVersion: 0 });
+  const keys = (page: { data: { eventKey: string }[] }) => page.data.map((event) => event.eventKey).sort();
+
+  beforeEach(async () => {
+    await seed([
+      land(1, "papua"),
+      land(2, "maluku"),
+      sea(3, "maluku", 120),
+      sea(4, "maluku", 301),
+      sea(5, "papua", 40),
+      legacy(6, "maluku"),
+      legacy(7, null),
+      land(8, "papua-barat-daya"),
+    ]);
+  });
+
+  it.each([
+    ["province=maluku", ["0000000000000002", "0000000000000006"]],
+    ["province=papua-barat-daya", ["0000000000000008"]],
+    ["province=aceh", []],
+    ["area=land", ["0000000000000001", "0000000000000002", "0000000000000008"]],
+    ["area=sea", ["0000000000000003", "0000000000000004", "0000000000000005"]],
+    ["nearProvince=maluku", ["0000000000000003"]],
+    ["nearProvince=maluku&area=sea", ["0000000000000003"]],
+    ["province=maluku&area=land", ["0000000000000002"]],
+  ])("%s", async (query, expected) => {
+    expect(keys(await list(query))).toEqual(expected);
+  });
+
+  it("serialises sea rows with the nearest province and its zone", async () => {
+    const [event] = (await list("nearProvince=papua")).data;
+    expect(event).toMatchObject({ areaKind: "sea", provinceSlug: null, nearestProvinceSlug: "papua", nearestProvinceKm: 40, zone: "WIT" });
+  });
+
+  it("statistics: 38 provinces with zone, land count and sea count; countSea; area=sea", async () => {
+    const stats = await getStatistics(db, { period: "all", fromUtc: null, nowMs: NOW });
+    expect(stats.data.byProvince).toHaveLength(38);
+    expect(stats.data.byProvince.slice(0, 3)).toEqual([
+      { slug: "maluku", name: "Maluku", zone: "WIT", count: 2, seaCount: 1 },
+      { slug: "papua", name: "Papua", zone: "WIT", count: 1, seaCount: 1 },
+      { slug: "papua-barat-daya", name: "Papua Barat Daya", zone: "WIT", count: 1, seaCount: 0 },
+    ]);
+    expect(stats.data.byProvince.find((item) => item.slug === "aceh")).toEqual({ slug: "aceh", name: "Aceh", zone: "WIB", count: 0, seaCount: 0 });
+    expect(stats.data.summary.countSea).toBe(3);
+    const seaOnly = await getStatistics(db, { period: "all", fromUtc: null, area: "sea", nowMs: NOW });
+    expect(seaOnly.data.summary).toMatchObject({ total: 3, countSea: 3 });
+  });
+
+  it("byDay and byHour bucket on WIB: 17:30 UTC counts in the next WIB day at hour 0", async () => {
+    await db.delete(earthquakes);
+    await seed([land(1, "papua")].map((value) => ({ ...value, eventTimeUtc: new Date("2026-10-27T17:30:00.000Z") })));
+    const stats = await getStatistics(db, { period: "all", fromUtc: null, nowMs: NOW });
+    expect(stats.data.byDay.find((day) => day.count > 0)).toEqual({ date: "2026-10-28", count: 1 });
+    expect(stats.data.byHour[0]).toBe(1);
+  });
+});
+
 describe("GET /api/v1/stream over HTTP (A-12, A-13)", () => {
   let server: Server;
   let baseUrl: string;

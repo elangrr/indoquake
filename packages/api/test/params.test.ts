@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { escapeLike, pageMeta, parseListParams } from "../src";
+import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
+import { escapeLike, pageMeta, parseAreaFilters, parseListParams } from "../src";
 
 const parse = (query: string) => parseListParams(new URLSearchParams(query));
 
@@ -57,6 +58,54 @@ describe("parseListParams (A-14, D16)", () => {
     ["province=atlantis", "Provinsi tidak dikenal"],
   ])("rejects %s with %s", (query, error) => {
     expect(parse(query)).toEqual({ ok: false, error });
+  });
+});
+
+describe("province, area and nearProvince (AC 16, 17)", () => {
+  it.each(PROVINCE_OPTIONS.map((province) => [province.slug]))("accepts province=%s", (slug) => {
+    expect(parse(`province=${slug}`)).toEqual({ ok: true, query: { provinceSlug: slug, limit: 100, page: 1 } });
+  });
+
+  it.each([
+    ["area=land", { area: "land" }],
+    ["area=sea", { area: "sea" }],
+    ["nearProvince=maluku", { nearProvinceSlug: "maluku" }],
+    ["nearProvince=maluku&area=sea", { nearProvinceSlug: "maluku", area: "sea" }],
+    ["province=papua&area=land", { provinceSlug: "papua", area: "land" }],
+  ])("maps %s", (query, filters) => {
+    expect(parse(query)).toEqual({ ok: true, query: { ...filters, limit: 100, page: 1 } });
+  });
+
+  it.each([
+    ["area=x", "Parameter tidak valid: area"],
+    ["area=LAND", "Parameter tidak valid: area"],
+    ["province=papua&nearProvince=maluku", "Parameter tidak valid: area"],
+    ["province=papua&area=sea", "Parameter tidak valid: area"],
+    ["nearProvince=maluku&area=land", "Parameter tidak valid: area"],
+    ["nearProvince=atlantis", "Provinsi tidak dikenal"],
+    ["province=atlantis&area=x", "Provinsi tidak dikenal"],
+  ])("rejects %s with %s", (query, error) => {
+    expect(parse(query)).toEqual({ ok: false, error });
+  });
+
+  it("parseAreaFilters gives the statistics route the same rules", () => {
+    expect(parseAreaFilters(new URLSearchParams("province=bali&area=land"))).toEqual({
+      ok: true,
+      filters: { provinceSlug: "bali", area: "land" },
+    });
+    expect(parseAreaFilters(new URLSearchParams("area=laut"))).toEqual({ ok: false, error: "Parameter tidak valid: area" });
+  });
+
+  it("any area value other than land or sea is a 400 on area (property)", () => {
+    fc.assert(
+      fc.property(
+        fc.string({ minLength: 1, maxLength: 12 }).filter((text) => !["land", "sea"].includes(text.trim()) && text.trim() !== ""),
+        (text) => {
+          expect(parse(new URLSearchParams({ area: text }).toString())).toEqual({ ok: false, error: "Parameter tidak valid: area" });
+        },
+      ),
+      { seed: 137, numRuns: 100 },
+    );
   });
 });
 

@@ -15,9 +15,9 @@ import {
   magnitudeDistribution,
   summarize,
 } from "@indoquake/earthquake";
-import { PROVINCE_OPTIONS } from "@indoquake/regions";
-import type { EarthquakeDetail, EarthquakeEvent, EarthquakeListResponse } from "@indoquake/shared";
-import { escapeLike, LIST_LIMIT_DEFAULT, pageMeta, type ListQuery } from "./params";
+import { NEAR_SEA_MAX_KM, PROVINCE_OPTIONS } from "@indoquake/regions/meta";
+import type { AreaKind, EarthquakeDetail, EarthquakeEvent, EarthquakeListResponse } from "@indoquake/shared";
+import { escapeLike, LIST_LIMIT_DEFAULT, pageMeta, type AreaFilters, type ListQuery } from "./params";
 
 export const EVENT_KEY_PATTERN = /^[0-9a-f]{16}$/;
 
@@ -31,9 +31,24 @@ function filtersFor(query: ListQuery): SQL | undefined {
   if (query.toUtc) filters.push(lte(earthquakes.eventTimeUtc, new Date(query.toUtc)));
   if (query.feltOnly) filters.push(isNotNull(earthquakes.feltText));
   if (query.tsunamiOnly) filters.push(eq(earthquakes.tsunamiPotential, true));
-  if (query.provinceSlug) filters.push(eq(earthquakes.provinceSlug, query.provinceSlug));
+  filters.push(...areaFiltersFor(query));
   if (query.q) filters.push(ilike(earthquakes.regionName, `%${escapeLike(query.q)}%`));
   return filters.length > 0 ? and(...filters) : undefined;
+}
+
+/** province= keeps its R133 meaning (stored province_slug, so legacy rows match); area and nearProvince need area_kind. */
+function areaFiltersFor(query: AreaFilters): SQL[] {
+  const filters: SQL[] = [];
+  if (query.provinceSlug) filters.push(eq(earthquakes.provinceSlug, query.provinceSlug));
+  if (query.area) filters.push(eq(earthquakes.areaKind, query.area));
+  if (query.nearProvinceSlug) {
+    filters.push(
+      eq(earthquakes.areaKind, "sea"),
+      eq(earthquakes.nearestProvinceSlug, query.nearProvinceSlug),
+      lte(earthquakes.nearestProvinceKm, NEAR_SEA_MAX_KM),
+    );
+  }
+  return filters;
 }
 
 /** One page of matching quakes, filtered and paged in SQL (no row cap, D10, D11). */
@@ -103,12 +118,14 @@ export interface StatisticsQuery {
   period: string;
   fromUtc: string | null;
   provinceSlug?: string;
+  area?: AreaKind;
   nowMs?: number;
 }
 
 /**
  * Statistics over every matching row (column-limited scan, no row cap, D11). byMonth covers the
- * last 12 WIB months whatever the period.
+ * last 12 WIB months whatever the period. byProvince lists all 38 provinces: count = land (and legacy rows
+ * by their stored slug), seaCount = sea events within NEAR_SEA_MAX_KM of that province.
  */
 export async function getStatistics(db: Database, query: StatisticsQuery) {
   const nowMs = query.nowMs ?? Date.now();
@@ -119,18 +136,21 @@ export async function getStatistics(db: Database, query: StatisticsQuery) {
     feltText: earthquakes.feltText,
     tsunamiPotential: earthquakes.tsunamiPotential,
     provinceSlug: earthquakes.provinceSlug,
+    areaKind: earthquakes.areaKind,
+    nearestProvinceSlug: earthquakes.nearestProvinceSlug,
+    nearestProvinceKm: earthquakes.nearestProvinceKm,
   };
-  const province = query.provinceSlug ? eq(earthquakes.provinceSlug, query.provinceSlug) : undefined;
+  const area = and(...areaFiltersFor({ provinceSlug: query.provinceSlug, area: query.area }));
   const rows = await db
     .select(columns)
     .from(earthquakes)
-    .where(and(query.fromUtc ? gte(earthquakes.eventTimeUtc, new Date(query.fromUtc)) : undefined, province));
+    .where(and(query.fromUtc ? gte(earthquakes.eventTimeUtc, new Date(query.fromUtc)) : undefined, area));
   const events = rows.map((row) => ({ ...row, eventTimeUtc: row.eventTimeUtc.toISOString() }));
   const yearAgo = new Date(nowMs - 400 * 86_400_000);
   const monthRows = await db
     .select({ eventTimeUtc: earthquakes.eventTimeUtc })
     .from(earthquakes)
-    .where(and(gte(earthquakes.eventTimeUtc, yearAgo), province));
+    .where(and(gte(earthquakes.eventTimeUtc, yearAgo), area));
   const nowIso = new Date(nowMs).toISOString();
   return {
     data: {
@@ -141,7 +161,7 @@ export async function getStatistics(db: Database, query: StatisticsQuery) {
       depthDistribution: depthDistribution(events),
       byDay: countByDay(events, 30, nowIso),
       byHour: countByHour(events),
-      byProvince: countByProvince(events, PROVINCE_OPTIONS),
+      byProvince: countByProvince(events, PROVINCE_OPTIONS, NEAR_SEA_MAX_KM),
       byMonth: countByMonth(
         monthRows.map((row) => ({ eventTimeUtc: row.eventTimeUtc.toISOString() })),
         12,

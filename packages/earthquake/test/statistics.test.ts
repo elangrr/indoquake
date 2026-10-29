@@ -54,7 +54,12 @@ describe("summarize", () => {
   it("handles an empty list", () => {
     const summary = summarize([]);
     expect(summary.total).toBe(0);
+    expect(summary.countSea).toBe(0);
     expect(summary.averageMagnitude).toBeNull();
+  });
+
+  it("countSea counts sea rows at any distance, not land or legacy rows (AC 18)", () => {
+    expect(summarize(areaEvents).countSea).toBe(3);
   });
 });
 
@@ -98,14 +103,34 @@ describe("time aggregation", () => {
     expect(hours.reduce((sum, value) => sum + value, 0)).toBe(3);
   });
 
-  it("counts by province", () => {
-    const counts = countByProvince(events, [
-      { slug: "jawa-barat", name: "Jawa Barat" },
-      { slug: "jawa-timur", name: "Jawa Timur" },
-      { slug: "banten", name: "Banten" },
+  it("byProvince lists every province with zone, land count and sea count within the limit (AC 18)", () => {
+    expect(countByProvince(areaEvents, PROVINCES, 300)).toEqual([
+      { slug: "papua", name: "Papua", zone: "WIT", count: 2, seaCount: 1 },
+      { slug: "jawa-barat", name: "Jawa Barat", zone: "WIB", count: 1, seaCount: 0 },
+      { slug: "bali", name: "Bali", zone: "WITA", count: 0, seaCount: 1 },
+      { slug: "maluku", name: "Maluku", zone: "WIT", count: 0, seaCount: 0 },
     ]);
-    expect(counts[0].slug).toBe("jawa-barat");
-    expect(counts.find((item) => item.slug === "jawa-timur")?.count).toBe(1);
-    expect(counts.find((item) => item.slug === "banten")?.count).toBe(0);
+  });
+
+  it("byProvince keeps table order between equal counts", () => {
+    expect(countByProvince([], PROVINCES, 300).map((item) => item.slug)).toEqual(["jawa-barat", "bali", "maluku", "papua"]);
   });
 });
+
+const PROVINCES = [
+  { slug: "jawa-barat", name: "Jawa Barat", zone: "WIB" },
+  { slug: "bali", name: "Bali", zone: "WITA" },
+  { slug: "maluku", name: "Maluku", zone: "WIT" },
+  { slug: "papua", name: "Papua", zone: "WIT" },
+] as const;
+
+const base = { eventTimeUtc: "2026-10-28T00:00:00.000Z", magnitude: 4, depthKm: 10, feltText: null, tsunamiPotential: false };
+const areaEvents: StatEvent[] = [
+  { ...base, areaKind: "land", provinceSlug: "papua" },
+  { ...base, areaKind: "land", provinceSlug: "papua" },
+  { ...base, areaKind: null, provinceSlug: "jawa-barat" },
+  { ...base, areaKind: null, provinceSlug: null },
+  { ...base, areaKind: "sea", provinceSlug: null, nearestProvinceSlug: "papua", nearestProvinceKm: 300 },
+  { ...base, areaKind: "sea", provinceSlug: null, nearestProvinceSlug: "bali", nearestProvinceKm: 12 },
+  { ...base, areaKind: "sea", provinceSlug: null, nearestProvinceSlug: "maluku", nearestProvinceKm: 301 },
+];

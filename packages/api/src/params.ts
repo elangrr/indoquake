@@ -1,4 +1,5 @@
-import { PROVINCE_OPTIONS } from "@indoquake/regions";
+import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
+import type { AreaKind } from "@indoquake/shared";
 
 export const LIST_LIMIT_DEFAULT = 100;
 export const LIST_LIMIT_MAX = 500;
@@ -17,7 +18,12 @@ export interface ListQuery {
   toUtc?: string;
   feltOnly?: boolean;
   tsunamiOnly?: boolean;
+  /** Land events in this province (legacy rows match by their stored province_slug). */
   provinceSlug?: string;
+  /** land or sea; legacy rows (area_kind null) never match. */
+  area?: AreaKind;
+  /** Sea events whose nearest province is this slug, within NEAR_SEA_MAX_KM. */
+  nearProvinceSlug?: string;
   /** Case-insensitive substring of regionName; % and _ match literally. */
   q?: string;
   order?: "desc" | "asc";
@@ -68,11 +74,9 @@ export function parseListParams(params: URLSearchParams): ParsedList {
   if (params.get("felt") === "true") query.feltOnly = true;
   if (params.get("tsunami") === "true") query.tsunamiOnly = true;
 
-  const province = present(params, "province");
-  if (province !== null) {
-    if (!KNOWN_PROVINCES.has(province)) return { ok: false, error: "Provinsi tidak dikenal" };
-    query.provinceSlug = province;
-  }
+  const area = parseAreaFilters(params);
+  if (!area.ok) return area;
+  Object.assign(query, area.filters);
   const q = present(params, "q");
   if (q !== null) {
     if (q.length < 2 || q.length > 60) return invalid("q");
@@ -84,6 +88,45 @@ export function parseListParams(params: URLSearchParams): ParsedList {
     query.order = order;
   }
   return { ok: true, query: { ...query, limit, page } };
+}
+
+export interface AreaFilters {
+  provinceSlug?: string;
+  area?: AreaKind;
+  nearProvinceSlug?: string;
+}
+
+export type ParsedAreaFilters = { ok: true; filters: AreaFilters } | { ok: false; error: string };
+
+const UNKNOWN_PROVINCE = { ok: false, error: "Provinsi tidak dikenal" } as const;
+const INVALID_AREA = { ok: false, error: "Parameter tidak valid: area" } as const;
+
+/**
+ * province, area and nearProvince (shared by the list and the statistics route). Conflicting pairs
+ * (province + nearProvince, province + area=sea, nearProvince + area=land) are a 400 on area.
+ */
+export function parseAreaFilters(params: URLSearchParams): ParsedAreaFilters {
+  const filters: AreaFilters = {};
+  const province = present(params, "province");
+  if (province !== null) {
+    if (!KNOWN_PROVINCES.has(province)) return UNKNOWN_PROVINCE;
+    filters.provinceSlug = province;
+  }
+  const nearProvince = present(params, "nearProvince");
+  if (nearProvince !== null) {
+    if (!KNOWN_PROVINCES.has(nearProvince)) return UNKNOWN_PROVINCE;
+    filters.nearProvinceSlug = nearProvince;
+  }
+  const area = present(params, "area");
+  if (area !== null) {
+    if (area !== "land" && area !== "sea") return INVALID_AREA;
+    filters.area = area;
+  }
+  const conflict =
+    (filters.provinceSlug !== undefined && filters.nearProvinceSlug !== undefined) ||
+    (filters.provinceSlug !== undefined && filters.area === "sea") ||
+    (filters.nearProvinceSlug !== undefined && filters.area === "land");
+  return conflict ? INVALID_AREA : { ok: true, filters };
 }
 
 /** meta for a page: totalPages is at least 1 so an empty result still has a page 1. */
