@@ -1,13 +1,23 @@
 import { parseFeltReports } from "@indoquake/bmkg";
-import { provinceBySlug } from "@indoquake/regions";
-import type { EarthquakeEvent } from "@indoquake/shared";
+import { provinceBySlug, zoneOfEvent } from "@indoquake/regions/meta";
+import type { AreaKind, EarthquakeEvent } from "@indoquake/shared";
 import type { earthquakes } from "./schema";
 
 export type EarthquakeRow = typeof earthquakes.$inferSelect;
 
-/** Stored row to the contract shape (SSE payload, API JSON). Province comes from the stored column. */
+const AREA_KINDS = new Set<string>(["land", "sea"]);
+
+/**
+ * Stored row to the contract shape (SSE payload, API JSON). Area comes from the stored columns:
+ * land = province; sea = nearest province + km (province null); legacy (area_kind null) = stored province as before.
+ * zone: the province's, else the nearest province's, else WIB.
+ */
 export function toEarthquakeEvent(row: EarthquakeRow): EarthquakeEvent {
-  const province = row.provinceSlug ? provinceBySlug(row.provinceSlug) : null;
+  const areaKind = row.areaKind && AREA_KINDS.has(row.areaKind) ? (row.areaKind as AreaKind) : null;
+  const provinceSlug = areaKind === "sea" ? null : (row.provinceSlug ?? null);
+  const nearestProvinceSlug = areaKind === "sea" ? (row.nearestProvinceSlug ?? null) : null;
+  const province = provinceSlug ? provinceBySlug(provinceSlug) : null;
+  const nearest = nearestProvinceSlug ? provinceBySlug(nearestProvinceSlug) : null;
   return {
     eventKey: row.eventKey,
     eventTimeUtc: row.eventTimeUtc.toISOString(),
@@ -23,8 +33,13 @@ export function toEarthquakeEvent(row: EarthquakeRow): EarthquakeEvent {
     feltReports: parseFeltReports(row.feltText ?? undefined),
     shakemapUrl: row.shakemapUrl,
     source: row.source,
-    provinceSlug: row.provinceSlug ?? null,
+    provinceSlug,
     provinceName: province?.name ?? null,
+    areaKind,
+    nearestProvinceSlug,
+    nearestProvinceName: nearest?.name ?? null,
+    nearestProvinceKm: areaKind === "sea" ? (row.nearestProvinceKm ?? null) : null,
+    zone: zoneOfEvent({ provinceSlug, nearestProvinceSlug }),
     firstSeenAt: row.firstSeenAt.toISOString(),
     lastUpdatedAt: row.lastUpdatedAt.toISOString(),
   };

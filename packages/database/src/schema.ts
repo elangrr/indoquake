@@ -8,10 +8,12 @@ import {
   pgTable,
   real,
   serial,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const earthquakes = pgTable(
   "earthquakes",
@@ -30,7 +32,12 @@ export const earthquakes = pgTable(
     feltText: text("felt_text"),
     shakemapUrl: text("shakemap_url"),
     source: text("source").notNull().default("BMKG"),
+    // Containing province (land only). Sea events: null here, nearest province below (R137, migration 0003).
     provinceSlug: text("province_slug"),
+    areaKind: text("area_kind"), // "land" | "sea"; null = legacy row not yet re-assigned
+    nearestProvinceSlug: text("nearest_province_slug"),
+    nearestProvinceKm: integer("nearest_province_km"),
+    regionVersion: smallint("region_version").notNull().default(0), // ASSIGNMENT_VERSION of the stored assignment
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -49,6 +56,8 @@ export const earthquakes = pgTable(
     index("earthquakes_event_time_idx").on(table.eventTimeUtc),
     index("earthquakes_magnitude_idx").on(table.magnitude),
     index("earthquakes_province_time_idx").on(table.provinceSlug, table.eventTimeUtc),
+    index("earthquakes_near_province_time_idx").on(table.nearestProvinceSlug, table.eventTimeUtc),
+    index("earthquakes_sea_time_idx").on(table.eventTimeUtc).where(sql`${table.areaKind} = 'sea'`),
   ],
 );
 

@@ -22,6 +22,13 @@
       "when": 1793201913093,
       "tag": "0002_magenta_rawhide_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793245268168,
+      "tag": "0003_conscious_deadpool",
+      "breakpoints": true
     }
   ]
 }
