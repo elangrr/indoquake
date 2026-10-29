@@ -331,19 +331,25 @@ export function Dashboard({
     pulseKey,
   };
 
+  // Phones read the latest quake, then the map, then the list. Desktop: latest quake and list in the
+  // left column, the map sticky on the right across both rows.
   return (
-    <div className="mx-auto w-full max-w-screen-2xl lg:grid lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
+    <div className="mx-auto w-full max-w-screen-2xl lg:grid lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
       <p aria-live="polite" role="status" className="sr-only" data-testid="live-announcer">
         {announcement}
       </p>
       <EventToasts items={toasts} onSelect={selectFromMap} />
-      <div className="min-w-0 lg:border-r lg:border-border">
+      <div className="min-w-0 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-border">
         {listError && events.length === 0 && (
           <div className="px-4 pt-6">
             <ErrorState onRetry={refetch} />
           </div>
         )}
-        <LatestQuake event={events[0] ?? null} events={events} />
+        <LatestQuake
+          event={events[0] ?? null}
+          events={events}
+          loading={dataError && events.length === 0 && !listError}
+        />
         {tsunamiInfo?.status === "potential" && selectedEvent && (
           <div role="alert" className="mx-4 mb-4 border-l-2 border-danger bg-danger-soft px-4 py-3">
             <p className="text-sm font-semibold text-danger">Berpotensi tsunami, status resmi BMKG</p>
@@ -352,6 +358,15 @@ export function Dashboard({
             </p>
           </div>
         )}
+      </div>
+      <div
+        aria-label="Peta gempa"
+        role="region"
+        className="relative h-[60vh] min-h-80 border-t border-border lg:sticky lg:top-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh-3.5rem)] lg:self-start lg:border-t-0"
+      >
+        {mapAllowed ? <EarthquakeMap {...mapProps} /> : <MapPlaceholder />}
+      </div>
+      <div className="min-w-0 lg:col-start-1 lg:row-start-2 lg:border-r lg:border-border">
         <FeedPanel
           events={filteredEvents}
           totalCount={events.length}
@@ -396,13 +411,6 @@ export function Dashboard({
           }
           tsunamiPanel={<TsunamiPanel event={selectedEvent} coastDistanceKm={coastDistanceKm} />}
         />
-      </div>
-      <div
-        aria-label="Peta gempa"
-        role="region"
-        className="relative h-[60vh] min-h-80 border-t border-border lg:sticky lg:top-0 lg:h-[calc(100dvh-3.5rem)] lg:border-t-0"
-      >
-        {mapAllowed ? <EarthquakeMap {...mapProps} /> : <MapPlaceholder />}
       </div>
     </div>
   );

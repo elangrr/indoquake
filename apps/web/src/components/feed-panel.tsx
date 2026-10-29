@@ -72,12 +72,14 @@ export function FeedPanel({
   const shownKey = useRef(selectedKey);
 
   // Bring a row into view only when the selection changes (e.g. a map click), never on
-  // first render or when live events arrive, so the page does not jump.
+  // first render, when the list first loads from the API (null to the newest quake) or when
+  // live events arrive, so the page does not jump.
   useEffect(() => {
     if (selectedKey === shownKey.current) return;
+    const firstSelection = shownKey.current === null;
     shownKey.current = selectedKey;
     const list = listRef.current;
-    if (!list || !selectedKey) return;
+    if (firstSelection || !list || !selectedKey) return;
     const element = list.querySelector(`[data-event-key="${CSS.escape(selectedKey)}"]`);
     element?.scrollIntoView({ block: "nearest" });
   }, [selectedKey]);

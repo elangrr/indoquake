@@ -4,8 +4,19 @@ import { formatWibDateTime } from "@/lib/wib";
 import { MagBadge } from "./mag-badge";
 import { Seismogram } from "./seismogram";
 
-/** The newest quake as plain text: it is the first thing read and the LCP element, never the map. */
-export function LatestQuake({ event, events }: { event: EarthquakeEvent | null; events: EarthquakeEvent[] }) {
+/**
+ * The newest quake as plain text: it is the first thing read and the LCP element, never the map.
+ * `loading` (the list still comes from the API) holds the filled height, so the map below does not move.
+ */
+export function LatestQuake({
+  event,
+  events,
+  loading = false,
+}: {
+  event: EarthquakeEvent | null;
+  events: EarthquakeEvent[];
+  loading?: boolean;
+}) {
   return (
     <section aria-labelledby="gempa-terkini" className="px-4 pt-6 pb-4">
       <h1 id="gempa-terkini" className="text-sm font-medium text-muted">
@@ -33,9 +44,43 @@ export function LatestQuake({ event, events }: { event: EarthquakeEvent | null; 
           </Link>
           <Seismogram events={events} />
         </div>
+      ) : loading ? (
+        <LatestQuakeSkeleton />
       ) : (
         <p className="mt-2 min-h-40 text-xl text-muted">Belum ada gempa tercatat.</p>
       )}
     </section>
+  );
+}
+
+/** One bar per line of the filled state, each on the same line height, so the swap does not shift. */
+function Bar({ className = "", width }: { className?: string; width: string }) {
+  return (
+    <span className={`block ${className}`}>
+      <span className={`inline-block rounded-sm bg-surface-2 ${width}`}>&nbsp;</span>
+    </span>
+  );
+}
+
+function LatestQuakeSkeleton() {
+  return (
+    <div className="mt-2" aria-hidden="true" data-testid="latest-quake-loading">
+      <Bar className="text-4xl" width="w-24" />
+      <span className="mt-2 block text-xl leading-snug">
+        <Bar width="w-full" />
+        <Bar width="w-1/2" />
+      </span>
+      <span className="mt-3 grid gap-y-1 text-sm">
+        <Bar width="w-1/2" />
+        <Bar width="w-1/3" />
+        <Bar width="w-2/3" />
+      </span>
+      <span className="mt-3 block min-h-11" />
+      <span className="mt-6 block h-14 rounded-sm bg-surface-2" />
+      <span className="mt-1 grid gap-y-1 text-xs">
+        <Bar width="w-full" />
+        <Bar width="w-1/2" />
+      </span>
+    </div>
   );
 }
