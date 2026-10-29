@@ -1,4 +1,4 @@
-// AC 5-7 and D22: province assignment on the real national lookup data.
+// AC 5-7 and D22: province assignment on the real national lookup data (the AC 7 sea and Bandung cases are assignArea rows).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -7,7 +7,6 @@ import {
   assignArea,
   describeLocation,
   provinceBySlug,
-  resolveProvince,
   zoneOfEvent,
   zoneOfProvince,
 } from "@indoquake/regions";
@@ -168,19 +167,5 @@ describe("describeLocation", () => {
 
   it("returns null for invalid coordinates", () => {
     expect(describeLocation(Number.NaN, 0)).toBeNull();
-  });
-});
-
-describe("deprecated resolveProvince wrapper (AC 7)", () => {
-  it("is null at sea south of Java", () => {
-    expect(resolveProvince(-9.5, 110.0)).toBeNull();
-  });
-
-  it("finds Bandung inside Jawa Barat", () => {
-    expect(resolveProvince(-6.9175, 107.6191)).toMatchObject({
-      province: { slug: "jawa-barat", name: "Jawa Barat" },
-      method: "inside",
-      distanceKm: 0,
-    });
   });
 });

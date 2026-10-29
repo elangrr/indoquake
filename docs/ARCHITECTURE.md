@@ -25,8 +25,9 @@ Browser (Bahasa Indonesia)
 | packages/database | Skema Drizzle, migrasi, migrator dengan advisory lock, serializer baris ke kontrak | src/index.ts, src/migrate.ts |
 | packages/api | Query list/detail/statistik, freshness, health, rate limit, hub SSE (tanpa framework) | src/index.ts |
 | packages/earthquake | Statistik, MMI, waktu tiba gelombang | src/index.ts |
-| packages/geo, regions, tsunami, notifications | Jarak, provinsi Jawa, status tsunami, format dan kirim notifikasi | src/index.ts |
-| apps/worker | Poller BMKG, retensi, backfill provinsi, leader lock, bot Telegram | src/index.ts |
+| packages/geo, tsunami, notifications | Jarak, status tsunami, format dan kirim notifikasi | src/index.ts |
+| packages/regions | 38 provinsi, zona WIB/WITA/WIT, assignArea (provinsi atau Laut/Perairan); `./meta` aman untuk browser | src/index.ts, src/meta.ts |
+| apps/worker | Poller BMKG, penentuan wilayah saat simpan, backfill wilayah, retensi, leader lock, bot Telegram | src/index.ts |
 | apps/web | Next.js; route API adalah pembungkus tipis atas packages/api | src/app/api/v1 |
 
 ## Aturan data
@@ -39,6 +40,14 @@ Browser (Bahasa Indonesia)
 - Pengumuman menurut umur saat pertama terlihat: > 6 jam disimpan diam-diam; 30 menit sampai 6 jam hanya event_log;
   ≤ 30 menit event_log dan notifikasi. Revisi hanya dinotifikasi ulang bila flag tsunami berubah, magnitudo bergeser
   ≥ 0,5 atau melewati ambang M4,5.
+- Wilayah: saat insert dan saat koordinat direvisi worker menyimpan `area_kind` (land/sea), `province_slug` (darat
+  saja), `nearest_province_slug` dan `nearest_province_km` (laut saja) dan `region_version`. Baris lama
+  (`region_version` di bawah versi saat ini) ditentukan ulang oleh backfill saat worker start (per 500 baris, advisory
+  lock 7137001, tanpa notifikasi atau event_log; `REGION_BACKFILL=off` melewatinya). Selama backfill berjalan, baris
+  lama (`area_kind` null) tetap cocok dengan `province=` lewat `province_slug` tersimpan.
+- Waktu per gempa ditampilkan di zona provinsinya (laut: provinsi terdekat); agregat nasional, filter tanggal dan
+  /hariini tetap hari WIB.
+- Langganan provinsi X cocok dengan gempa darat di X dan gempa laut dengan provinsi terdekat X dalam 300 km.
 - Gempa disimpan selamanya (RETENTION_DAYS=0). event_log dipangkas tiap jam setelah EVENT_LOG_RETENTION_HOURS (72).
 - Status data: `lastSuccessAt` = poll autogempa sukses terakhir. fresh ≤ 90 s, stale ≤ 600 s, down setelahnya.
 
@@ -48,9 +57,9 @@ Semua JSON dengan `Cache-Control: no-store`; galat berbentuk `{ "error": "<pesan
 
 | Endpoint | Isi |
 | --- | --- |
-| GET /api/v1/earthquakes | Daftar dengan filter limit, page, minMagnitude, maxMagnitude, minDepthKm, maxDepthKm, from, to, felt, tsunami, province, q, order; meta.total dan totalPages |
+| GET /api/v1/earthquakes | Daftar dengan filter limit, page, minMagnitude, maxMagnitude, minDepthKm, maxDepthKm, from, to, felt, tsunami, province (38 slug, darat), area (land\|sea), nearProvince (laut, terdekat dalam 300 km), q, order; meta.total dan totalPages. province+nearProvince, province+area=sea dan nearProvince+area=land: 400 |
 | GET /api/v1/earthquakes/[eventKey] | Detail dengan feeds dan revisi (terbaru dulu); 404 untuk key tak dikenal |
-| GET /api/v1/statistics?period=24h\|7d\|30d\|1y\|all&province= | Ringkasan, distribusi, per hari, per jam, per provinsi, per bulan (12 bulan WIB) |
+| GET /api/v1/statistics?period=24h\|7d\|30d\|1y\|all&province=&area= | Ringkasan (dengan countSea), distribusi, per hari, per jam, per provinsi (38 item: zone, count darat, seaCount laut dalam 300 km), per bulan (12 bulan WIB) |
 | GET /api/v1/health | 200 selama database dan Redis menjawab; `data` berisi freshness BMKG |
 | GET /api/v1/stream | SSE: retry, ready, status, earthquake (id = seq), ping tiap 15 s, resync; ditutup setelah 15 menit |
 | GET /api/v1/time, /geocode, /felt-locations | Tidak berubah |

@@ -104,6 +104,29 @@ describe("deploy/compose.prod.yml (A-21, D3, D4, D15, D16)", () => {
   });
 });
 
+describe("R137 upgrade path (AC 23, D23, D24, D26)", () => {
+  const hostSteps = readFileSync(join(DEPLOY, "HOST_STEPS.draft.md"), "utf8");
+  const envExample = readFileSync(join(DEPLOY, "env.example"), "utf8");
+  const upgrade = hostSteps.slice(hostSteps.indexOf("## Upgrade"), hostSteps.indexOf("## Rollback"));
+
+  it("passes REGION_BACKFILL to the worker, default on, and documents it in env.example", () => {
+    expect((service("worker").environment as Record<string, string>).REGION_BACKFILL).toBe("${REGION_BACKFILL:-on}");
+    expect(envExample).toContain("\nREGION_BACKFILL=on\n");
+  });
+
+  it("dumps with pg_dump -Fc into backups/ and checks it with pg_restore --list before the new stack starts", () => {
+    expect(upgrade.indexOf("pg_dump -U indoquake -Fc indoquake > backups/")).toBeGreaterThan(-1);
+    expect(upgrade.indexOf("pg_restore --list")).toBeGreaterThan(upgrade.indexOf("pg_dump -U indoquake -Fc"));
+    expect(upgrade.indexOf("$C up -d`")).toBeGreaterThan(upgrade.indexOf("pg_restore --list"));
+  });
+
+  it("rehearses on a throwaway postgres before the deploy and names the four rollback triggers", () => {
+    expect(upgrade.indexOf("iq-rehearsal-pg")).toBeLessThan(upgrade.indexOf("$C up -d`"));
+    expect(upgrade).toContain("migrate exits non-zero; health is not 200 within 5 min; the backfill logs an error,\nor remaining > 0 15 min after start; a public check fails.");
+    expect(upgrade).toContain("Restore the database ONLY with Elang's explicit yes");
+  });
+});
+
 describe("deploy/nginx template (A-22, D18, D19)", () => {
   const stream = nginx.slice(nginx.indexOf("location /api/v1/stream"), nginx.indexOf("location / {"));
 

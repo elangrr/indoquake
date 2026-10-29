@@ -42,7 +42,13 @@ Satu VPS, Docker Compose, di belakang nginx dan certbot (deploy/compose.prod.yml
 | migrate (sekali jalan) | 0,5 CPU / 256 MiB | tidak ada |
 
 - `migrate` menjalankan migrasi lalu keluar; web dan worker baru mulai setelah migrate sukses dan postgres/redis sehat.
+- Saat start, worker menjalankan backfill wilayah: semua baris dengan `region_version` di bawah versi penentuan
+  wilayah saat ini ditentukan ulang (provinsi atau Laut/Perairan) per 500 baris, di bawah advisory lock, tanpa
+  notifikasi, tanpa publish dan tanpa baris event_log. Log `province_backfill_done` berisi scanned, updated dan
+  remaining (level warn bila remaining > 0). `REGION_BACKFILL=off` di file env melewatinya
+  (`province_backfill_skipped`); bawaan on.
 - Log tiap kontainer dibatasi 3 x 10 MB. Gempa disimpan selamanya; event_log dipangkas setelah 72 jam.
 - Rahasia hanya dari file env di host (POSTGRES_PASSWORD, REDIS_PASSWORD), tidak pernah di repo.
 - nginx: deploy/nginx/indoquake.indonode.net.conf.template (stream tanpa buffer, X-Real-IP dari `$remote_addr`).
-- Langkah host lengkap: deploy/HOST_STEPS.draft.md.
+- Langkah host lengkap: deploy/HOST_STEPS.draft.md. Upgrade stack yang sudah jalan (misalnya ke migrasi 0003):
+  bagian "Upgrade" di file itu (pg_dump -Fc sebelum migrate baru, gladi di postgres sementara, pemicu rollback).

@@ -3,7 +3,7 @@
 import { distanceToRingKm, pointInRing } from "@indoquake/geo";
 import type { AreaResponse } from "@indoquake/shared";
 import lookupFile from "./data/provinces-lookup.json";
-import { PROVINCE_TABLE, SNAP_KM, provinceBySlug, zoneOfProvince, type ProvinceMeta } from "./meta";
+import { PROVINCE_TABLE, SNAP_KM, provinceBySlug, zoneOfProvince } from "./meta";
 
 /** One polygon = outer ring then hole rings; coordinates [lon, lat]. */
 type Polygon = number[][][];
@@ -110,21 +110,4 @@ export function describeLocation(latitude: number, longitude: number): AreaRespo
     nearestProvinceKm: area.nearestProvinceKm,
     zone: zoneOfProvince(area.nearestProvinceSlug) ?? "WIB",
   };
-}
-
-export interface ProvinceResolution {
-  province: ProvinceMeta;
-  method: "inside";
-  distanceKm: 0;
-}
-
-/**
- * @deprecated Use assignArea. Land only (inside or snapped), null for sea. Kept so apps/worker store.ts and
- * notify.ts compile until lane A moves them to assignArea and removes this wrapper (SPEC section 7).
- */
-export function resolveProvince(latitude: number, longitude: number): ProvinceResolution | null {
-  const area = assignArea(latitude, longitude);
-  if (!area || area.kind !== "land") return null;
-  const province = provinceBySlug(area.provinceSlug);
-  return province ? { province, method: "inside", distanceKm: 0 } : null;
 }

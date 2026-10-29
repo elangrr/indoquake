@@ -23,6 +23,8 @@ per IP.
 - Feed tidak punya ID kejadian. Parameter awal dapat berubah beberapa menit setelah kejadian; Indoquake mencocokkan
   rekaman dengan selisih waktu ≤ 60 s dan jarak ≤ 50 km ke baris yang sama dan menyimpan perubahan sebagai revisi.
 - Status tsunami hanya dari `Potensi` BMKG. Aplikasi tidak pernah menyatakan tsunami sendiri.
+- Cakupan: semua gempa yang dimuat feed BMKG untuk seluruh Indonesia dan sekitarnya. Worker mengirim user-agent
+  `Indoquake/0.2 (monitoring gempa Indonesia; sumber data BMKG)` ke ketiga feed.
 
 ## Hasil pemeriksaan (28-10-2026, satu permintaan per cek)
 
