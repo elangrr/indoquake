@@ -54,11 +54,21 @@ test("F3 a stale heartbeat in Redis shows Tertunda", async ({ page }) => {
 });
 
 test("F4 @needs-lane-a riwayat province, q and page against the real API", async ({ page }) => {
-  await page.goto("/riwayat?province=jawa-timur&q=Malang&page=1");
+  await page.goto("/riwayat?province=papua&q=Jayapura&page=1");
   await expect(page.getByTestId("history-count")).toHaveText(/^\d+ gempa$/);
   const rows = page.locator("[data-event-key]");
   await expect(rows.first()).toBeVisible();
-  await expect(rows.filter({ hasNotText: "Malang" })).toHaveCount(0);
+  await expect(rows.filter({ hasNotText: "Jayapura" })).toHaveCount(0);
+});
+
+test("F6 @needs-lane-a province page and sea filter against the real API (R137)", async ({ page }) => {
+  await page.goto("/provinsi/papua-barat-daya");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gempa Papua Barat Daya");
+  await expect(page.locator("[data-event-key]").first()).toContainText("Sorong");
+  await page.goto("/riwayat?area=sea");
+  const rows = page.locator("[data-event-key]");
+  await expect(rows.first()).toBeVisible();
+  await expect(rows.filter({ hasNotText: "Perairan dekat" })).toHaveCount(0);
 });
 
 test("F5 detail page renders a seeded quake on the server with HTTP 200", async ({ page }) => {

@@ -28,3 +28,19 @@ test("E16 on a 390x844 phone loading the list and the map shifts the layout by a
   await expect(page.getByTestId("latest-quake-loading")).toHaveCount(0);
   expect(await layoutShift(page)).toBeLessThanOrEqual(0.05);
 });
+
+test.describe("with the API answering 500 (D27)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.unrouteAll();
+    await blockMapTiles(page);
+    await mockApi(page, { listStatus: 500 });
+  });
+
+  test("E16 on a 390x844 phone the error state shifts the layout by at most 0.05", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("alert").filter({ hasText: "Data belum bisa dimuat. Coba lagi." })).toBeVisible();
+    await expect(page.locator(".leaflet-container")).toBeVisible();
+    await expect(page.locator(".leaflet-container")).toHaveAttribute("data-province-layer", "38");
+    expect(await layoutShift(page)).toBeLessThanOrEqual(0.05);
+  });
+});

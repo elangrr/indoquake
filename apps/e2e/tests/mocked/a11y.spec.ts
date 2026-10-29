@@ -4,7 +4,7 @@ import { status } from "../../support/fixtures";
 import { blockMapTiles, emit, installStreamStub, mockApi } from "../../support/mock";
 import { statistics } from "../../support/statistics";
 
-const ROUTES = ["/", "/riwayat", "/statistik", "/provinsi", "/notifikasi", "/gempa/9c41d27a0b6e3f15"];
+const ROUTES = ["/", "/riwayat", "/statistik", "/provinsi", "/provinsi/papua", "/notifikasi", "/gempa/9c41d27a0b6e3f15"];
 
 async function open(page: Page, route: string) {
   await blockMapTiles(page);

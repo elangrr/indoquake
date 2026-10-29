@@ -20,7 +20,7 @@ test("E1 home shows the list, the status and the map placeholder, then the theme
   page.on("request", (request) => tileHosts.push(new URL(request.url()).host));
   await page.emulateMedia({ colorScheme: "dark" });
   await openHome(page);
-  await expect(page.getByRole("heading", { name: "Gempa terkini di Pulau Jawa" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gempa terkini di Indonesia" })).toBeVisible();
   await expect(page.locator("[data-event-key]")).toHaveCount(8);
   await expect(page.getByRole("status", { name: /^Status data:/ })).toBeVisible();
   const map = page.locator(".leaflet-container");

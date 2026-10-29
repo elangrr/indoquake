@@ -11,13 +11,30 @@ export interface ApiMock {
   statisticsStatus?: number;
   subscribe?: { status: number; body: unknown };
   subscribeTest?: { status: number; body: unknown };
+  /** GET /api/v1/area answer (R137); default: Jayapura, land in Papua, WIT. */
+  area?: { status: number; body: unknown };
 }
 
 export interface ApiLog {
   list: URL[];
   statistics: URL[];
+  area: URL[];
   posts: { path: string; body: unknown }[];
 }
+
+export const JAYAPURA_AREA = {
+  data: {
+    latitude: -2.5337,
+    longitude: 140.7181,
+    kind: "land",
+    provinceSlug: "papua",
+    provinceName: "Papua",
+    nearestProvinceSlug: null,
+    nearestProvinceName: null,
+    nearestProvinceKm: null,
+    zone: "WIT",
+  },
+};
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -25,7 +42,7 @@ function json(route: Route, body: unknown, status = 200) {
 
 /** Answers every browser call to /api/v1 so the web server needs no database. */
 export async function mockApi(page: Page, mock: ApiMock = {}): Promise<ApiLog> {
-  const log: ApiLog = { list: [], statistics: [], posts: [] };
+  const log: ApiLog = { list: [], statistics: [], area: [], posts: [] };
   const events = mock.events ?? quakes();
   await page.route("**/api/v1/**", (route) => {
     const url = new URL(route.request().url());
@@ -39,10 +56,16 @@ export async function mockApi(page: Page, mock: ApiMock = {}): Promise<ApiLog> {
       }
       const limit = Number(url.searchParams.get("limit") ?? 100);
       const page = Number(url.searchParams.get("page") ?? 1);
-      const data = events.slice((page - 1) * limit, page * limit);
+      // R137 filters answered like the API: nearProvince = sea events near that province, area = kind.
+      const near = url.searchParams.get("nearProvince");
+      const area = url.searchParams.get("area");
+      const matching = events
+        .filter((event) => !near || (event.areaKind === "sea" && event.nearestProvinceSlug === near))
+        .filter((event) => !area || event.areaKind === area);
+      const data = matching.slice((page - 1) * limit, page * limit);
       return json(route, {
         data,
-        meta: { count: data.length, limit, page, total: events.length, totalPages: Math.max(1, Math.ceil(events.length / limit)) },
+        meta: { count: data.length, limit, page, total: matching.length, totalPages: Math.max(1, Math.ceil(matching.length / limit)) },
       });
     }
     if (path.startsWith("/api/v1/earthquakes/")) {
@@ -62,6 +85,10 @@ export async function mockApi(page: Page, mock: ApiMock = {}): Promise<ApiLog> {
       return json(route, mock.statistics ?? { error: "Data belum bisa dimuat." }, mock.statisticsStatus ?? (mock.statistics ? 200 : 503));
     }
     if (path === "/api/v1/felt-locations") return json(route, { data: [] });
+    if (path === "/api/v1/area") {
+      log.area.push(url);
+      return json(route, mock.area?.body ?? JAYAPURA_AREA, mock.area?.status ?? 200);
+    }
     return json(route, { error: "Tidak tersedia" }, 404);
   });
   return log;

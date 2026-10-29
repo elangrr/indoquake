@@ -45,44 +45,69 @@ export async function migrate(databaseUrl) {
   await sql.end();
 }
 
-const REGIONS = [
-  ["Kab. Sukabumi", "BaratDaya", -7.3, 106.6, "jawa-barat"],
-  ["Kab. Garut", "Selatan", -7.6, 107.8, "jawa-barat"],
-  ["Kab. Cilacap", "BaratDaya", -7.9, 108.9, "jawa-tengah"],
-  ["Kab. Malang", "BaratDaya", -8.6, 112.4, "jawa-timur"],
-  ["Kab. Pacitan", "Selatan", -8.8, 111.1, "jawa-timur"],
-  ["Bantul", "BaratDaya", -8.0, 110.3, "di-yogyakarta"],
-  ["Kab. Pandeglang", "BaratLaut", -6.5, 105.8, "banten"],
-  ["Kab. Banyuwangi", "Tenggara", -8.6, 114.4, "jawa-timur"],
+// National seed (R137 AC 42): 17 fixed places in all 7 island groups, 13 land provinces, 10 of 17 in WITA/WIT,
+// 3 sea places. Each place carries the literal server assignment of its exact coordinates (no jitter), checked
+// against assignArea by scripts/seed.test.ts. [place, direction, lat, lon, kind, provinceSlug | nearestSlug, km]
+export const REGIONS = [
+  ["Kab. Pidie", "Tenggara", 5.3, 95.9, "land", "aceh", null],
+  ["Kota Padang", "Barat", -0.9471, 100.4172, "land", "sumatera-barat", null],
+  ["Kota Bengkulu", "BaratDaya", -3.7928, 102.2608, "land", "bengkulu", null],
+  ["Kab. Sukabumi", "BaratDaya", -7.85, 106.25, "sea", "jawa-barat", 55],
+  ["Kab. Wonosobo", "TimurLaut", -7.25, 109.94, "land", "jawa-tengah", null],
+  ["Kab. Pacitan", "Selatan", -9.21, 111.05, "sea", "jawa-timur", 103],
+  ["Kota Denpasar", "Selatan", -8.6705, 115.2126, "land", "bali", null],
+  ["Kota Mataram", "Timur", -8.5833, 116.1167, "land", "nusa-tenggara-barat", null],
+  ["Kota Kupang", "TimurLaut", -10.12, 123.66, "land", "nusa-tenggara-timur", null],
+  ["Kota Samarinda", "Utara", -0.5022, 117.1536, "land", "kalimantan-timur", null],
+  ["Kota Palu", "Timur", -0.95, 119.95, "land", "sulawesi-tengah", null],
+  ["Kota Manado", "Selatan", 1.4748, 124.8421, "land", "sulawesi-utara", null],
+  ["Kab. Maluku Tengah", "Tenggara", -5.5, 129.0, "sea", "maluku", 127],
+  ["Kota Ternate", "Barat", 0.7898, 127.3764, "land", "maluku-utara", null],
+  ["Kota Jayapura", "BaratDaya", -2.6, 140.67, "land", "papua", null],
+  ["Kota Sorong", "Timur", -0.8762, 131.2558, "land", "papua-barat-daya", null],
+  ["Kab. Merauke", "Utara", -8.4932, 140.4018, "land", "papua-selatan", null],
 ];
 
-/** Seeds `count` quakes spread over the last 30 days; deterministic for a given count. */
-export async function seed(databaseUrl, count = 120) {
-  const postgres = (await import("postgres")).default;
-  const sql = postgres(databaseUrl, { max: 1 });
-  const now = Date.now();
-  const rows = Array.from({ length: count }, (_, index) => {
-    const [place, direction, lat, lon, provinceSlug] = REGIONS[index % REGIONS.length];
+/** Pure rows for `count` quakes over the last 30 days; deterministic for a given count and `now`. */
+export function seedRows(count, now = Date.now()) {
+  return Array.from({ length: count }, (_, index) => {
+    const [place, direction, latitude, longitude, kind, slug, km] = REGIONS[index % REGIONS.length];
     const at = new Date(now - index * 5.5 * 3_600_000 - 7 * 60_000);
     const magnitude = Math.round((2.6 + ((index * 37) % 34) / 10) * 10) / 10;
-    const offset = ((index * 13) % 40) / 100;
     return {
       event_key: (0x9a00000000000000n + BigInt(index) * 7919n).toString(16).padStart(16, "0").slice(-16),
       event_time_utc: at,
       event_time_wib: "",
-      latitude: lat - offset,
-      longitude: lon + offset,
+      latitude,
+      longitude,
       depth_km: 8 + ((index * 29) % 140),
       magnitude,
-      region_name: `Pusat gempa berada di laut ${20 + ((index * 11) % 120)} km ${direction} ${place}`,
+      region_name: `Pusat gempa berada di ${kind === "sea" ? "laut" : "darat"} ${20 + ((index * 11) % 120)} km ${direction} ${place}`,
       potential_text: "Tidak berpotensi tsunami",
       tsunami_potential: false,
-      felt_text: magnitude >= 4.5 ? `III ${place.replace("Kab. ", "")}` : null,
+      felt_text: magnitude >= 4.5 ? `III ${place.replace(/^(Kab\.|Kota) /, "")}` : null,
       shakemap_url: null,
       source: "BMKG",
-      province_slug: provinceSlug,
+      province_slug: kind === "land" ? slug : null,
+      // R137 migration 0003 columns; dropped by seed() on a database without them (D10 baseline on da5356f).
+      area_kind: kind,
+      nearest_province_slug: kind === "sea" ? slug : null,
+      nearest_province_km: kind === "sea" ? km : null,
+      region_version: 1,
     };
   });
+}
+
+const COLUMNS_0003 = ["area_kind", "nearest_province_slug", "nearest_province_km", "region_version"];
+
+/** Seeds `count` quakes; inserts the 0003 columns only when the schema has them (same seed on old and new trees). */
+export async function seed(databaseUrl, count = 120) {
+  const postgres = (await import("postgres")).default;
+  const sql = postgres(databaseUrl, { max: 1 });
+  const present = await sql`select column_name from information_schema.columns where table_name = 'earthquakes' and column_name = 'area_kind'`;
+  const rows = seedRows(count).map((row) =>
+    present.length > 0 ? row : Object.fromEntries(Object.entries(row).filter(([key]) => !COLUMNS_0003.includes(key))),
+  );
   await sql`insert into earthquakes ${sql(rows)}`;
   await sql.end();
   return rows.map((row) => row.event_key);

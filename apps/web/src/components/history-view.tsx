@@ -22,7 +22,7 @@ export function HistoryView() {
     <>
       <form method="get" action="/riwayat" className="grid grid-cols-2 gap-4 px-4 pb-6 sm:grid-cols-4 lg:grid-cols-6">
         <label className={`${label} col-span-2`}>
-          Wilayah
+          Nama tempat
           <input name="q" type="search" defaultValue={filters.q} maxLength={60} className={field} />
         </label>
         <label className={label}>
