@@ -61,9 +61,16 @@ test("F4 @needs-lane-a riwayat province, q and page against the real API", async
   await expect(rows.filter({ hasNotText: "Malang" })).toHaveCount(0);
 });
 
-test("F5 detail page renders a seeded quake on the server", async ({ page }) => {
+test("F5 detail page renders a seeded quake on the server with HTTP 200", async ({ page }) => {
   test.skip(!SEEDED_KEY, "no seeded key");
-  await page.goto(`/gempa/${SEEDED_KEY}`);
+  const response = await page.goto(`/gempa/${SEEDED_KEY}`);
+  expect(response!.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Pusat gempa");
   expect(await page.title()).toMatch(/^M\d\.\d /);
+});
+
+test("F5 a well-formed key that is not in the database answers HTTP 404 with the Indonesian not-found page", async ({ page }) => {
+  const response = await page.goto("/gempa/ffffffffffffffff");
+  expect(response!.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Halaman tidak ditemukan" })).toBeVisible();
 });

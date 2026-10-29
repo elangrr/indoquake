@@ -98,10 +98,12 @@ test("E11 with the database down the detail page shows the retry state without i
   await expect(page.locator("body")).not.toContainText("DATABASE_URL");
 });
 
-test("E11 a malformed quake key shows the not-found page without a database call", async ({ page }) => {
+test("E11 a malformed quake key answers HTTP 404 with the Indonesian not-found page, no database call", async ({ page }) => {
   await mockApi(page);
-  await page.goto("/gempa/bukan-kunci");
+  const response = await page.goto("/gempa/bukan-kunci");
+  expect(response!.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Halaman tidak ditemukan" })).toBeVisible();
+  await expect(page.getByText("Alamat ini tidak ada atau gempanya tidak tercatat.")).toBeVisible();
 });
 
 test("E12 notifikasi posts the subscription and shows the API message; test send reports success", async ({ page }) => {
