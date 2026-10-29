@@ -13,7 +13,7 @@ import { runMigrations } from "@indoquake/database/migrate";
 import { startPostgis, type StartedPostgis } from "@indoquake/database/test-support";
 import type { NormalizedEarthquake } from "@indoquake/bmkg";
 import type { EarthquakeEvent, EarthquakeStreamPayload, FeedName } from "@indoquake/shared";
-import { backfillProvinces } from "../src/backfill";
+import { backfillRegions, runRegionBackfill } from "../src/backfill";
 import { createFeedPoller } from "../src/ingest";
 import { acquireLeadership } from "../src/leader";
 import { createRetentionJob } from "../src/retention";
@@ -86,6 +86,30 @@ const REVISED = {
   Magnitude: "5.1",
 };
 
+const AREA = {
+  slug: earthquakes.provinceSlug,
+  kind: earthquakes.areaKind,
+  nearest: earthquakes.nearestProvinceSlug,
+  km: earthquakes.nearestProvinceKm,
+  version: earthquakes.regionVersion,
+};
+
+/** A row as R133 stored it (region_version 0, no area_kind). */
+function seedRow(eventKey: string, latitude: number, longitude: number, provinceSlug: string | null) {
+  return {
+    eventKey,
+    eventTimeUtc: new Date("2026-10-01T00:00:00Z"),
+    eventTimeWib: "x",
+    latitude,
+    longitude,
+    depthKm: 10,
+    magnitude: 5,
+    regionName: eventKey,
+    provinceSlug,
+    lastUpdatedAt: new Date("2026-10-01T00:05:00Z"),
+  };
+}
+
 describe("ingest against PostGIS and a mock BMKG", () => {
   it("A-03: a revised record from another feed merges into the first row and keeps its key", async () => {
     const { poll, published } = poller();
@@ -152,29 +176,23 @@ describe("ingest against PostGIS and a mock BMKG", () => {
     expect([notified.length, published.length]).toEqual([0, 0]);
   });
 
-  it("A-07: inserted rows carry province_slug and the backfill fills old null rows idempotently", async () => {
+  it("A-07: inserted rows carry the region assignment and the backfill re-assigns old rows idempotently", async () => {
     const { poll } = poller();
     serve("autogempa", feedBody(gempa(YOUNG)));
     await poll("autogempa");
-    expect(await db.select({ slug: earthquakes.provinceSlug }).from(earthquakes)).toEqual([{ slug: "jawa-barat" }]);
+    expect(await db.select(AREA).from(earthquakes)).toEqual([
+      { slug: "jawa-barat", kind: "land", nearest: null, km: null, version: 1 },
+    ]);
 
-    await db.update(earthquakes).set({ provinceSlug: null });
-    await db.insert(earthquakes).values({
-      eventKey: "ffffffffffffffff",
-      eventTimeUtc: new Date("2026-10-01T00:00:00Z"),
-      eventTimeWib: "x",
-      latitude: 2.52,
-      longitude: 128.09,
-      depthKm: 10,
-      magnitude: 5,
-      regionName: "Maluku",
-    });
-    expect(await backfillProvinces(db, 1)).toEqual({ scanned: 2, updated: 1 });
-    expect(await backfillProvinces(db, 1)).toEqual({ scanned: 1, updated: 0 });
-    const slugs = await db.select({ slug: earthquakes.provinceSlug }).from(earthquakes).orderBy(asc(earthquakes.id));
-    expect(slugs).toEqual([{ slug: "jawa-barat" }, { slug: null }]);
+    await db.update(earthquakes).set({ areaKind: null, regionVersion: 0 });
+    await db.insert(earthquakes).values(seedRow("ffffffffffffffff", 2.52, 128.09, null));
+    expect(await backfillRegions(pg.url, 1)).toEqual({ scanned: 2, updated: 2, remaining: 0 });
+    expect(await backfillRegions(pg.url, 1)).toEqual({ scanned: 0, updated: 0, remaining: 0 });
+    expect(await db.select(AREA).from(earthquakes).orderBy(asc(earthquakes.id))).toEqual([
+      { slug: "jawa-barat", kind: "land", nearest: null, km: null, version: 1 },
+      { slug: null, kind: "sea", nearest: "maluku-utara", km: 14, version: 1 },
+    ]);
   });
-
   it("A-09: sends If-None-Match after an ETag and treats 304 as success without re-writing", async () => {
     const { poll, totals } = poller();
     serve("autogempa", feedBody(gempa(YOUNG)), { etag: '"v1"' });
@@ -242,5 +260,84 @@ describe("ingest against PostGIS and a mock BMKG", () => {
     const next = await acquireLeadership(pg.url);
     expect(next).not.toBeNull();
     await next?.release();
+  });
+});
+
+describe("R137 region assignment on ingest (AC 19)", () => {
+  const AT = (coordinates: string, extra: Record<string, string> = {}) => gempa({ ...YOUNG, Coordinates: coordinates, ...extra });
+
+  it("a new event at Jayapura is land papua at version 1, and its event_log payload carries the area fields", async () => {
+    const { poll, published } = poller();
+    serve("autogempa", feedBody(AT("-2.5337,140.7181", { Lintang: "2.53 LS", Bujur: "140.72 BT" })));
+    await poll("autogempa");
+    expect(await db.select(AREA).from(earthquakes)).toEqual([{ slug: "papua", kind: "land", nearest: null, km: null, version: 1 }]);
+    const [log] = await db.select().from(eventLog);
+    expect((log?.payload as EarthquakeStreamPayload).event).toMatchObject({ areaKind: "land", provinceSlug: "papua", zone: "WIT" });
+    expect(published[0]?.event).toMatchObject({ areaKind: "land", provinceSlug: "papua", zone: "WIT" });
+  });
+
+  it("an event 100 km south of Bali is sea with the nearest province and integer km", async () => {
+    const { poll } = poller();
+    serve("autogempa", feedBody(AT("-9.6,115.2", { Lintang: "9.60 LS", Bujur: "115.20 BT" })));
+    await poll("autogempa");
+    expect(await db.select(AREA).from(earthquakes)).toEqual([{ slug: null, kind: "sea", nearest: "bali", km: 83, version: 1 }]);
+  });
+
+  it("an update that moves the event from sea to land re-assigns all four columns", async () => {
+    const { poll, published } = poller();
+    serve("autogempa", feedBody(AT("-9.0,115.2", { Lintang: "9.00 LS", Bujur: "115.20 BT" })));
+    await poll("autogempa");
+    expect(await db.select(AREA).from(earthquakes)).toEqual([{ slug: null, kind: "sea", nearest: "bali", km: 17, version: 1 }]);
+    serve(
+      "gempaterkini",
+      feedBody(AT("-8.6705,115.2126", { Lintang: "8.67 LS", Bujur: "115.21 BT", Jam: "18:55:10 WIB", DateTime: "2026-10-28T11:55:10+00:00" })),
+    );
+    await poll("gempaterkini");
+    expect(await db.select(AREA).from(earthquakes)).toEqual([{ slug: "bali", kind: "land", nearest: null, km: null, version: 1 }]);
+    expect(published.at(-1)?.event).toMatchObject({ areaKind: "land", provinceSlug: "bali", nearestProvinceSlug: null, zone: "WITA" });
+  });
+});
+
+describe("R137 region backfill (AC 20, D24)", () => {
+  async function seedLegacy() {
+    await db.insert(earthquakes).values([
+      seedRow("000000000000000a", -6.9175, 107.6191, "jawa-barat"),
+      seedRow("000000000000000b", -9.5, 110.0, "di-yogyakarta"),
+      seedRow("000000000000000c", -2.5337, 140.7181, null),
+      seedRow("000000000000000d", -20, 100, null),
+    ]);
+  }
+  const stored = () =>
+    db.select({ ...AREA, lastUpdatedAt: earthquakes.lastUpdatedAt }).from(earthquakes).orderBy(asc(earthquakes.eventKey));
+  const UNTOUCHED = new Date("2026-10-01T00:05:00Z");
+
+  it("re-assigns land, R133 offshore, null-slug Papua and far-sea rows once, silently", async () => {
+    await seedLegacy();
+    expect(await backfillRegions(pg.url)).toEqual({ scanned: 4, updated: 4, remaining: 0 });
+    expect(await stored()).toEqual([
+      { slug: "jawa-barat", kind: "land", nearest: null, km: null, version: 1, lastUpdatedAt: UNTOUCHED },
+      { slug: null, kind: "sea", nearest: "di-yogyakarta", km: 162, version: 1, lastUpdatedAt: UNTOUCHED },
+      { slug: "papua", kind: "land", nearest: null, km: null, version: 1, lastUpdatedAt: UNTOUCHED },
+      { slug: null, kind: "sea", nearest: "banten", km: 1546, version: 1, lastUpdatedAt: UNTOUCHED },
+    ]);
+    expect(await backfillRegions(pg.url)).toEqual({ scanned: 0, updated: 0, remaining: 0 });
+    expect(await logTypes()).toEqual([]);
+  });
+
+  it("two concurrent runs finish without error and leave every row at version 1", async () => {
+    await seedLegacy();
+    const runs = await Promise.all([backfillRegions(pg.url, 1), backfillRegions(pg.url, 1)]);
+    expect(runs.map((run) => run.updated).sort()).toEqual([0, 4]);
+    expect((await stored()).map((row) => row.version)).toEqual([1, 1, 1, 1]);
+  });
+
+  it("logs province_backfill_done with remaining 0, and REGION_BACKFILL=off skips it", async () => {
+    await seedLegacy();
+    expect(await runRegionBackfill({ databaseUrl: pg.url, enabled: false, logger })).toBeNull();
+    expect((await stored()).map((row) => row.version)).toEqual([0, 0, 0, 0]);
+    expect(await runRegionBackfill({ databaseUrl: pg.url, enabled: true, logger })).toEqual({ scanned: 4, updated: 4, remaining: 0 });
+    expect(logLines.map((line) => JSON.parse(line).msg)).toEqual(["province_backfill_skipped", "province_backfill_done"]);
+    expect(JSON.parse(logLines[1]!)).toMatchObject({ level: 30, scanned: 4, updated: 4, remaining: 0 });
+    expect(await logTypes()).toEqual([]);
   });
 });

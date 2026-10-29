@@ -9,8 +9,8 @@ import {
   type EarthquakeRow,
 } from "@indoquake/database";
 import { DUPLICATE_MAX_TIME_DELTA_MS, findDuplicate, type NormalizedEarthquake } from "@indoquake/bmkg";
-import { resolveProvince } from "@indoquake/regions";
 import type { EarthquakeEvent, EarthquakeStreamPayload } from "@indoquake/shared";
+import { areaColumnsAt } from "./area";
 import { shouldAnnounce, shouldReannounce, type AnnounceDecision } from "./announce";
 import { diffSnapshots, type EarthquakeSnapshot, type FieldChange } from "./diff";
 
@@ -71,10 +71,6 @@ function fromEvent(event: NormalizedEarthquake): EarthquakeSnapshot {
     shakemapUrl: event.shakemapUrl,
     tsunamiPotential: event.tsunamiPotential,
   };
-}
-
-export function provinceSlugAt(latitude: number, longitude: number): string | null {
-  return resolveProvince(latitude, longitude)?.province.slug ?? null;
 }
 
 type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
@@ -152,7 +148,7 @@ export async function upsertEarthquake(
           feltText: event.feltText,
           shakemapUrl: event.shakemapUrl,
           source: event.source,
-          provinceSlug: provinceSlugAt(event.latitude, event.longitude),
+          ...areaColumnsAt(event.latitude, event.longitude),
         })
         .onConflictDoNothing({ target: earthquakes.eventKey })
         .returning();
@@ -214,7 +210,7 @@ export async function upsertEarthquake(
       .set({
         ...rest,
         ...(eventTimeUtc ? { eventTimeUtc: new Date(eventTimeUtc) } : {}),
-        provinceSlug: provinceSlugAt(latitude, longitude),
+        ...areaColumnsAt(latitude, longitude),
         lastUpdatedAt: nowDate,
         updatedAt: nowDate,
       })

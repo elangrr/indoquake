@@ -22,6 +22,15 @@ describe("loadConfig", () => {
     expect(loadConfig({ ...REQUIRED, BMKG_POLL_AUTOGEMPA_SECONDS: "1" }).pollIntervalsSeconds.autogempa).toBe(5);
   });
 
+  it.each([
+    [undefined, true],
+    ["on", true],
+    ["off", false],
+    [" OFF ", false],
+  ])("REGION_BACKFILL=%s runs the region backfill: %s", (value, expected) => {
+    expect(loadConfig({ ...REQUIRED, REGION_BACKFILL: value }).regionBackfill).toBe(expected);
+  });
+
   it("keeps RETENTION_DAYS when it is positive", () => {
     expect(loadConfig({ ...REQUIRED, RETENTION_DAYS: "30" }).retentionDays).toBe(30);
   });

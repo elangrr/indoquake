@@ -4,7 +4,7 @@ import pino from "pino";
 import { createDb } from "@indoquake/database";
 import { MIGRATIONS_FOLDER, runMigrations, type RunMigrationsOptions } from "@indoquake/database/migrate";
 import { BMKG_ATTRIBUTION, EVENT_CHANNEL, type FeedName } from "@indoquake/shared";
-import { backfillProvinces } from "./backfill";
+import { runRegionBackfill } from "./backfill";
 import { loadConfig } from "./env";
 import { buildHeartbeat, createRedis, writeHeartbeat } from "./heartbeat";
 import { createFeedPoller } from "./ingest";
@@ -37,11 +37,10 @@ async function main(): Promise<void> {
   );
   console.log(BMKG_ATTRIBUTION);
 
-  // Start order (SPEC 5): migrations under an advisory lock, province backfill, then the scheduler.
+  // Start order (SPEC 5): migrations under an advisory lock, region backfill (own lock), then the scheduler.
   await runMigrations(config.databaseUrl, MIGRATIONS_FOLDER, migrateOptions);
   const { sql, db } = createDb(config.databaseUrl);
-  const backfill = await backfillProvinces(db);
-  logger.info(backfill, "province_backfill_done");
+  await runRegionBackfill({ databaseUrl: config.databaseUrl, enabled: config.regionBackfill, logger });
 
   const abort = new AbortController();
   const leadership = await acquireLeadership(config.databaseUrl, {

@@ -14,6 +14,8 @@ export interface WorkerConfig {
   /** 0 = keep every quake forever (default). */
   retentionDays: number;
   eventLogRetentionHours: number;
+  /** false only for REGION_BACKFILL=off (stop switch, D24). */
+  regionBackfill: boolean;
 }
 
 type Env = Record<string, string | undefined>;
@@ -49,5 +51,6 @@ export function loadConfig(env: Env = process.env): WorkerConfig {
     logLevel: env.LOG_LEVEL ?? "info",
     retentionDays: retentionDays > 0 ? retentionDays : 0,
     eventLogRetentionHours: eventLogHours > 0 ? eventLogHours : DEFAULT_EVENT_LOG_RETENTION_HOURS,
+    regionBackfill: env.REGION_BACKFILL?.trim().toLowerCase() !== "off",
   };
 }
