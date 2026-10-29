@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { EarthquakeEvent } from "@indoquake/shared";
 import type { DistanceMap } from "@/lib/distances";
@@ -154,56 +154,73 @@ export function FeedPanel({
                 : "Tidak ada kejadian untuk filter ini."}
           </li>
         ) : (
-          events.map((event) => {
-            const distance = distances?.get(event.eventKey) ?? null;
-            const selected = event.eventKey === selectedKey;
-            return (
-              <li
-                key={event.eventKey}
-                data-event-key={event.eventKey}
-                data-pulse={event.eventKey === pulseKey ? "true" : undefined}
-                className={`relative flex border-b border-border ${selected ? "bg-surface-2" : ""} ${
-                  event.eventKey === pulseKey ? "iq-pulse" : ""
-                }`}
-              >
-                {selected && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-signal" />}
-                <button
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onSelect(event.eventKey)}
-                  className="min-w-0 flex-1 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-2"
-                >
-                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <MagBadge magnitude={event.magnitude} size="md" />
-                    <span className="num text-xs text-muted">{formatEventTime(event, "dateTime")}</span>
-                    {event.tsunamiPotential === true && (
-                      <span className="rounded-sm bg-danger-soft px-1.5 text-xs font-semibold text-danger">
-                        Berpotensi tsunami
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-1 block text-sm text-foreground">{event.regionName}</span>
-                  <span className="num mt-1 block text-xs text-muted">
-                    {event.depthKm} km
-                    {eventAreaLabel(event) ? ` · ${eventAreaLabel(event)}` : ""}
-                    {event.feltText ? " · Dirasakan" : ""}
-                    {distance ? ` · ${Math.round(distance.epicentralKm).toLocaleString("id-ID")} km dari Anda (estimasi)` : ""}
-                  </span>
-                </button>
-                <Link
-                  href={`/gempa/${event.eventKey}`}
-                  aria-label={`Detail gempa M${event.magnitude.toFixed(1)} ${event.regionName}`}
-                  className="flex w-14 shrink-0 items-center justify-center text-muted transition-colors duration-150 hover:bg-surface-2 hover:text-foreground"
-                >
-                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16">
-                    <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                  </svg>
-                </Link>
-              </li>
-            );
-          })
+          events.map((event) => (
+            <FeedRow
+              key={event.eventKey}
+              event={event}
+              selected={event.eventKey === selectedKey}
+              pulsing={event.eventKey === pulseKey}
+              epicentralKm={distances?.get(event.eventKey)?.epicentralKm ?? null}
+              onSelect={onSelect}
+            />
+          ))
         )}
       </ul>
     </section>
   );
 }
+
+interface FeedRowProps {
+  event: EarthquakeEvent;
+  selected: boolean;
+  pulsing: boolean;
+  epicentralKm: number | null;
+  onSelect: (eventKey: string) => void;
+}
+
+/** One list row. Memoised: dashboard state changes (clock, status, map, panels) do not re-render 100 rows. */
+const FeedRow = memo(function FeedRow({ event, selected, pulsing, epicentralKm, onSelect }: FeedRowProps) {
+  return (
+    <li
+      data-event-key={event.eventKey}
+      data-pulse={pulsing ? "true" : undefined}
+      className={`relative flex border-b border-border ${selected ? "bg-surface-2" : ""} ${
+        pulsing ? "iq-pulse" : ""
+      }`}
+    >
+      {selected && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-signal" />}
+      <button
+        type="button"
+        aria-pressed={selected}
+        onClick={() => onSelect(event.eventKey)}
+        className="min-w-0 flex-1 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-2"
+      >
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <MagBadge magnitude={event.magnitude} size="md" />
+          <span className="num text-xs text-muted">{formatEventTime(event, "dateTime")}</span>
+          {event.tsunamiPotential === true && (
+            <span className="rounded-sm bg-danger-soft px-1.5 text-xs font-semibold text-danger">
+              Berpotensi tsunami
+            </span>
+          )}
+        </span>
+        <span className="mt-1 block text-sm text-foreground">{event.regionName}</span>
+        <span className="num mt-1 block text-xs text-muted">
+          {event.depthKm} km
+          {eventAreaLabel(event) ? ` · ${eventAreaLabel(event)}` : ""}
+          {event.feltText ? " · Dirasakan" : ""}
+          {epicentralKm !== null ? ` · ${Math.round(epicentralKm).toLocaleString("id-ID")} km dari Anda (estimasi)` : ""}
+        </span>
+      </button>
+      <Link
+        href={`/gempa/${event.eventKey}`}
+        aria-label={`Detail gempa M${event.magnitude.toFixed(1)} ${event.regionName}`}
+        className="flex w-14 shrink-0 items-center justify-center text-muted transition-colors duration-150 hover:bg-surface-2 hover:text-foreground"
+      >
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16">
+          <path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      </Link>
+    </li>
+  );
+});

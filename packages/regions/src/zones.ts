@@ -24,10 +24,24 @@ export type ZonedStyle = "clock" | "hourMinute" | "dateTime" | "long";
 
 const HOUR_MS = 3_600_000;
 
+// Building an Intl.DateTimeFormat is slow (a list of 100 quakes needs 200 per render); there are only a few
+// option sets, so each formatter is built once.
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+function formatter(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = JSON.stringify(options);
+  let format = formatters.get(key);
+  if (!format) {
+    format = new Intl.DateTimeFormat("id-ID", { timeZone: "UTC", hour12: false, ...options });
+    formatters.set(key, format);
+  }
+  return format;
+}
+
 /** Intl in UTC on an instant shifted by the zone offset: deterministic, needs no tz data. */
 function shifted(iso: string, zone: ZoneId, options: Intl.DateTimeFormatOptions): string {
   const local = new Date(Date.parse(iso) + ZONES[zone].offsetHours * HOUR_MS);
-  return new Intl.DateTimeFormat("id-ID", { timeZone: "UTC", hour12: false, ...options }).format(local);
+  return formatter(options).format(local);
 }
 
 function clock(iso: string, zone: ZoneId, withSeconds: boolean): string {
