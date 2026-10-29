@@ -1,7 +1,8 @@
 # Indoquake web design notes
 
-Purpose: show the newest quakes on Java and whether BMKG data is current, fast enough to read on a phone in the first seconds after shaking.
-Audience: residents of Java on phones (390 px first), plus people checking history and statistics on desktop.
+Purpose: show the newest quakes anywhere in Indonesia (38 provinces and the seas around them) and whether BMKG data is current, fast enough to read on a phone in the first seconds after shaking. Times show in the event's zone (WIB, WITA, WIT).
+Audience: people across Indonesia on phones (390 px first), plus people checking history and statistics on desktop.
+Map (R137): opens on the whole archipelago (fit to INDONESIA_BOUNDS in the fixed-height container); thin neutral province outlines, no fill, in a pane under the quake markers, loaded after the map exists; the user's area view only when location permission is already granted or after the location control.
 Direction: seismograph field station. Paper and graphite surfaces, thin rules instead of boxes, one signal colour, monospaced tabular figures for every number.
 Differentiator: the 24 hour seismogram strip under the latest quake, one spike per real event, height by magnitude.
 

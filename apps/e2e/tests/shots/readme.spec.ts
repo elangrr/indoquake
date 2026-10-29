@@ -18,7 +18,20 @@ const SHOTS = [
   { name: "statistik-mobile-dark", path: "/statistik", width: 390, height: 844, scheme: "dark" },
 ] as const;
 
-for (const shot of SHOTS) {
+// SHOTS_EXTRA=1 adds the review set (R137 lane B): a non-Java province page and statistik at both sizes and schemes.
+const EXTRA = process.env.SHOTS_EXTRA === "1"
+  ? (["light", "dark"] as const).flatMap((scheme) =>
+      [
+        { width: 1366, height: 900, size: "desktop" },
+        { width: 390, height: 844, size: "mobile" },
+      ].flatMap((view) => [
+        { name: "provinsi-papua-barat-daya-" + view.size + "-" + scheme, path: "/provinsi/papua-barat-daya", width: view.width, height: view.height, scheme },
+        { name: "statistik-all-" + view.size + "-" + scheme, path: "/statistik", width: view.width, height: view.height, scheme },
+      ]),
+    )
+  : [];
+
+for (const shot of [...SHOTS, ...EXTRA]) {
   test(`shot ${shot.name}`, async ({ page }) => {
     mkdirSync(OUT, { recursive: true });
     await page.setViewportSize({ width: shot.width, height: shot.height });
@@ -31,6 +44,7 @@ for (const shot of SHOTS) {
     await emit(page, "status", status("fresh", 6));
     await expect(page.getByRole("status", { name: "Status data: Langsung" })).toBeVisible();
     await page.waitForLoadState("networkidle");
+    if (shot.path === "/") await expect(page.locator(".leaflet-container")).toHaveAttribute("data-province-layer", "38");
     if (shot.path === "/" && process.env.SHOTS_OFFLINE !== "1") {
       await expect(page.locator(".leaflet-tile-loaded").first()).toBeVisible({ timeout: 10_000 });
     }

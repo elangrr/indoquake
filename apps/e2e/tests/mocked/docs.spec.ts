@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
+import { GEOBOUNDARIES_ATTRIBUTION } from "@indoquake/shared";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..", "..");
 const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
@@ -9,7 +10,7 @@ const relativeLinks = (text: string) =>
   [...text.matchAll(/\]\(([^)]+)\)/g)].map((match) => match[1]).filter((href) => !/^https?:/.test(href));
 
 const EXPECTED_LINKS = [
-  "README.id.md",
+  "README.en.md",
   "docs/screenshots/home-desktop-light.png",
   "docs/screenshots/home-mobile-light.png",
   "docs/screenshots/home-desktop-dark.png",
@@ -21,12 +22,18 @@ const EXPECTED_LINKS = [
 
 test("E14 both READMEs share one heading structure", () => {
   expect(headingLevels(read("README.md"))).toEqual(["#", "##", "##", "##", "##", "##", "##"]);
-  expect(headingLevels(read("README.id.md"))).toEqual(["#", "##", "##", "##", "##", "##", "##"]);
+  expect(headingLevels(read("README.en.md"))).toEqual(["#", "##", "##", "##", "##", "##", "##"]);
 });
 
 test("E14 README links are the screenshots and docs that exist", () => {
   expect(relativeLinks(read("README.md"))).toEqual(EXPECTED_LINKS);
-  expect(relativeLinks(read("README.id.md"))).toEqual(["README.md", ...EXPECTED_LINKS.slice(1)]);
+  expect(relativeLinks(read("README.en.md"))).toEqual(["README.md", ...EXPECTED_LINKS.slice(1)]);
+});
+
+test("E14 the first content line of each README links to the other language (D13)", () => {
+  expect(read("README.md").split("\n")[2]).toBe("[English](README.en.md)");
+  expect(read("README.en.md").split("\n")[2]).toBe("[Bahasa Indonesia](README.md)");
+  expect(existsSync(join(ROOT, "README.id.md"))).toBe(false);
 });
 
 for (const file of [...EXPECTED_LINKS, "README.md"]) {
@@ -36,8 +43,10 @@ for (const file of [...EXPECTED_LINKS, "README.md"]) {
 }
 
 test("E14 both READMEs carry the live URL, BMKG terms and the safety disclaimer", () => {
-  for (const file of ["README.md", "README.id.md"]) {
+  for (const file of ["README.md", "README.en.md"]) {
     const text = read(file);
+    expect(text, file).toContain("BMKG");
+    expect(text, file).toContain(GEOBOUNDARIES_ATTRIBUTION);
     expect(text, file).toContain("https://indoquake.indonode.net");
     expect(text, file).toContain("60");
     expect(text, file).toContain("https://data.bmkg.go.id/gempabumi/");

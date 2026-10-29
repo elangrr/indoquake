@@ -7,7 +7,7 @@ const CASES = [
   { path: "/", main: { role: "status", name: /^Status data:/ } },
   { path: "/riwayat", main: { role: "button", name: "Terapkan" } },
   { path: "/statistik", main: { role: "navigation", name: "Periode" } },
-  { path: "/provinsi/jawa-timur", main: { role: "heading", name: "Gempa Jawa Timur" } },
+  { path: "/provinsi/papua", main: { role: "heading", name: "Gempa Papua" } },
   { path: "/provinsi/papua-barat-daya", main: { role: "heading", name: "Perairan dekat Papua Barat Daya" } },
 ] as const;
 

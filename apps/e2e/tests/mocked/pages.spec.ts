@@ -81,14 +81,15 @@ test("E8 provinsi lists counts, the province page lists its quakes, an unknown s
   const log = await mockApi(page, { statistics: statistics("all") });
   await page.goto("/provinsi");
   await expect(page.getByTestId("count-jawa-barat")).toHaveText("18 gempa");
-  await page.getByRole("link", { name: /Jawa Barat/ }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gempa Jawa Barat");
+  await expect(page.getByTestId("count-maluku")).toHaveText("5 gempa");
+  await page.locator("a[href='/provinsi/maluku']").click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Gempa Maluku");
   await expect(page.locator("[data-event-key]").first()).toBeVisible();
   await expect.poll(() => log.list.map((url) => url.searchParams.get("province") ?? url.searchParams.get("nearProvince"))).toEqual(
-    expect.arrayContaining(["jawa-barat", "jawa-barat"]),
+    expect.arrayContaining(["maluku", "maluku"]),
   );
-  await expect(page.getByRole("heading", { name: "Perairan dekat Jawa Barat" })).toBeVisible();
-  await expect(page.locator("[data-event-key='4e7b10c9d2a83f66']").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Perairan dekat Maluku" })).toBeVisible();
+  await expect(page.locator("[data-event-key='17f2e4d6c8b0a9e1']").first()).toBeVisible();
   const response = await page.goto("/provinsi/atlantis");
   expect(response!.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Halaman tidak ditemukan" })).toBeVisible();

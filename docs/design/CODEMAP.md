@@ -10,9 +10,16 @@
 - apps/web/src/lib/map-tiles.ts: basemap per theme (Carto with NEXT_PUBLIC_CARTO_API_KEY, else OSM + tile-pane filter).
 - apps/web/src/lib/sentence-case.ts: sentence case for upstream labels (tsunami status).
 - apps/web/src/lib/merge-event.ts: field-wise merge of stream frames into the list.
-- apps/web/src/lib/history-query.ts: /riwayat URL params to API params; lib/wib.ts: WIB formatting and day bounds.
+- apps/web/src/lib/history-query.ts: /riwayat URL params to API params (province, area); WIB day bounds come from @indoquake/regions/meta.
+- apps/web/src/lib/event-time.ts: an event's times in its own zone (WIB/WITA/WIT) and its server area label; all zone maths lives in @indoquake/regions/meta (client code never imports the bare "@indoquake/regions").
+- apps/web/src/app/api/v1/area/route.ts: GET /api/v1/area (describeLocation, server only); lib/use-area.ts: the user's zone for ETA times.
+- apps/web/src/lib/province-layer.ts: lazy /geo province outlines (national layer, up to 3 detailed outlines from zoom 7, single province for /provinsi/[slug]) and the data-view / data-bounds / data-province-layer hooks.
+- apps/web/src/lib/coastline.ts + use-coast-distance.ts: /geo/garis-pantai.json loaded once a user location exists; distance to the coast.
+- apps/web/src/lib/provincial-capitals.ts: the 38 capitals for the location panel select.
+- apps/web/src/components/province-view.tsx: province page body (land list, nearby sea list, lazy map); province-list.tsx: /provinsi grouped by island group.
+- apps/web/src/app/opengraph-image.tsx: code-generated 1200x630 share image; app/sitemap.ts: nav URLs plus 38 province pages.
 - apps/web/src/lib/use-api.ts: keyed GET hook with loading, error, retry.
 - apps/web/scripts/check-bundle.mjs: home bundle budget; scripts/sync-fonts.mjs: copies fontsource woff2 into src/lib/fonts.
-- apps/e2e/support/: fixtures, API mock, EventSource stub, layout-shift recorder; scripts/stack.mjs: Testcontainers stack, migrate, seed.
+- apps/e2e/support/: national fixtures (literal server assignments, checked by scripts/fixtures-area.test.ts), API mock (incl. /api/v1/area, nearProvince, area), EventSource stub, layout-shift recorder; scripts/stack.mjs: Testcontainers stack, migrate, national seed (seedRows, checked by scripts/seed.test.mjs).
 - apps/e2e/scripts/web-server.mjs: starts `next start` in its own process group for run-full.mjs and serve.mjs; stops the whole group on every exit path (tests: scripts/web-server.test.mjs).
 - apps/e2e/tests/{mocked,full,shots}/: Playwright projects (mocked runs anywhere, full needs Docker, shots writes docs/screenshots).
