@@ -1,24 +1,35 @@
-import coastlineData from "@/data/java-coastline.json";
-
-interface CoastlineFile {
+/** National coastline (Natural Earth 10m, public/geo/garis-pantai.json), loaded only once a user location exists. */
+export interface CoastlineFile {
   source: string;
   bbox: { minLon: number; minLat: number; maxLon: number; maxLat: number };
   lines: number[][][];
 }
 
-const DATA = coastlineData as unknown as CoastlineFile;
+export const COASTLINE_URL = "/geo/garis-pantai.json";
 
-export function distanceToCoastKm(
-  latitude: number,
-  longitude: number,
-): number | null {
-  if (DATA.lines.length === 0) return null;
+let pending: Promise<CoastlineFile | null> | null = null;
+
+/** Fetches the coastline once per page; null when it cannot be loaded (callers then show no coast row). */
+export function loadCoastline(): Promise<CoastlineFile | null> {
+  pending ??= fetch(COASTLINE_URL)
+    .then((response) => (response.ok ? (response.json() as Promise<CoastlineFile>) : null))
+    .catch(() => null)
+    .then((data) => {
+      if (!data) pending = null; // allow a retry on the next location
+      return data;
+    });
+  return pending;
+}
+
+/** Distance in km (one decimal) from a point to the nearest coastline segment, or null without data. */
+export function distanceToCoastKm(latitude: number, longitude: number, coastline: CoastlineFile): number | null {
+  if (coastline.lines.length === 0) return null;
 
   const kmPerDegLat = 110.574;
   const kmPerDegLon = 111.32 * Math.cos((latitude * Math.PI) / 180);
   let best = Infinity;
 
-  for (const line of DATA.lines) {
+  for (const line of coastline.lines) {
     for (let index = 0; index < line.length - 1; index += 1) {
       const a = line[index];
       const b = line[index + 1];
@@ -38,13 +49,8 @@ export function distanceToCoastKm(
       const dx = bx - ax;
       const dy = by - ay;
       const lengthSq = dx * dx + dy * dy;
-      const t =
-        lengthSq > 0
-          ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSq))
-          : 0;
-      const px = ax + t * dx;
-      const py = ay + t * dy;
-      const distance = Math.hypot(px, py);
+      const t = lengthSq > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSq)) : 0;
+      const distance = Math.hypot(ax + t * dx, ay + t * dy);
       if (distance < best) best = distance;
     }
   }

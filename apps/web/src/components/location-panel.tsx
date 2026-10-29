@@ -4,23 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { EarthquakeEvent } from "@indoquake/shared";
 import type { DistanceInfo } from "@/lib/distances";
 import type { GeocodeResult } from "@/lib/geocode";
+import { PROVINCE_GROUPS, provinceBySlug } from "@indoquake/regions/meta";
+import { PROVINCIAL_CAPITALS } from "@/lib/provincial-capitals";
 import { MagBadge } from "./mag-badge";
 import type { GeoStatus, UserLocation } from "@/lib/use-geolocation";
 
 export const NEAR_RADII_KM = [25, 50, 100, 250, 500] as const;
 
-const JAVA_CITIES = [
-  { label: "Jakarta", latitude: -6.2088, longitude: 106.8456 },
-  { label: "Bandung", latitude: -6.9175, longitude: 107.6191 },
-  { label: "Serang", latitude: -6.1104, longitude: 106.1503 },
-  { label: "Cirebon", latitude: -6.732, longitude: 108.5523 },
-  { label: "Semarang", latitude: -6.9667, longitude: 110.4167 },
-  { label: "Yogyakarta", latitude: -7.7956, longitude: 110.3695 },
-  { label: "Surakarta", latitude: -7.5755, longitude: 110.8243 },
-  { label: "Surabaya", latitude: -7.2575, longitude: 112.7521 },
-  { label: "Malang", latitude: -7.9666, longitude: 112.6326 },
-  { label: "Jember", latitude: -8.1689, longitude: 113.7022 },
-];
 
 interface LocationPanelProps {
   status: GeoStatus;
@@ -193,20 +183,30 @@ function ManualLocationForm({
         </button>
       </form>
 
-      <div className="flex flex-wrap gap-1.5 pt-0.5">
-        {JAVA_CITIES.map((city) => (
-          <button
-            key={city.label}
-            type="button"
-            onClick={() =>
-              onSetManual(city.latitude, city.longitude, city.label)
-            }
-            className="min-h-11 rounded-sm border border-border px-3 text-sm text-muted transition-colors duration-150 hover:border-foreground hover:text-foreground"
-          >
-            {city.label}
-          </button>
-        ))}
-      </div>
+      <label className="block text-xs text-muted">
+        Ibu kota provinsi
+        <select
+          value=""
+          onChange={(event) => {
+            const capital = PROVINCIAL_CAPITALS[event.target.value];
+            if (capital) onSetManual(capital.latitude, capital.longitude, capital.name);
+          }}
+          className="mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground"
+        >
+          <option value="" disabled>
+            Pilih kota
+          </option>
+          {PROVINCE_GROUPS.map((group) => (
+            <optgroup key={group.name} label={group.name}>
+              {group.slugs.map((slug) => (
+                <option key={slug} value={slug}>
+                  {PROVINCIAL_CAPITALS[slug]?.name}, {provinceBySlug(slug)?.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }

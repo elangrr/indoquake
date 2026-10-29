@@ -20,7 +20,7 @@ import {
 } from "./feed-panel";
 import { LocationPanel } from "./location-panel";
 import { ErrorState } from "./error-state";
-import { distanceToCoastKm } from "@/lib/coastline";
+import { useCoastDistance } from "@/lib/use-coast-distance";
 import { mergeEvent, mergeEvents } from "@/lib/merge-event";
 import { useArea } from "@/lib/use-area";
 import { zoneOfEvent } from "@indoquake/regions/meta";
@@ -267,11 +267,7 @@ export function Dashboard({
         ? "estimate"
         : null;
 
-  const coastDistanceKm = useMemo(
-    () =>
-      location ? distanceToCoastKm(location.latitude, location.longitude) : null,
-    [location],
-  );
+  const coastDistanceKm = useCoastDistance(location);
 
   const tsunamiInfo = selectedEvent
     ? tsunamiStatusFromPotential(selectedEvent.tsunamiPotential)
@@ -343,15 +339,11 @@ export function Dashboard({
       </p>
       <EventToasts items={toasts} onSelect={selectFromMap} />
       <div className="min-w-0 lg:col-start-1 lg:row-start-1 lg:border-r lg:border-border">
-        {listError && events.length === 0 && (
-          <div className="px-4 pt-6">
-            <ErrorState onRetry={refetch} />
-          </div>
-        )}
         <LatestQuake
           event={events[0] ?? null}
           events={events}
           loading={dataError && events.length === 0 && !listError}
+          error={listError && events.length === 0 ? <ErrorState onRetry={refetch} /> : null}
         />
         {tsunamiInfo?.status === "potential" && selectedEvent && (
           <div role="alert" className="mx-4 mb-4 border-l-2 border-danger bg-danger-soft px-4 py-3">

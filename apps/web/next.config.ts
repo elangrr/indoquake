@@ -27,7 +27,11 @@ const nextConfig: NextConfig = {
     "@indoquake/notifications",
   ],
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      // Province outlines and the coastline change only with a data rebuild (R137 P0).
+      { source: "/geo/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+    ];
   },
 };
 

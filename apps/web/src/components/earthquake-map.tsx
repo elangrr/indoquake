@@ -8,7 +8,8 @@ import type {
   Map as LeafletMap,
   Marker,
 } from "leaflet";
-import type { EarthquakeEvent } from "@indoquake/shared";
+import { GEOBOUNDARIES_ATTRIBUTION, type EarthquakeEvent } from "@indoquake/shared";
+import { provinceBySlug } from "@indoquake/regions/meta";
 import {
   DEFAULT_VELOCITY_MODEL,
   parseMmiString,
@@ -18,25 +19,14 @@ import { currentTheme } from "@/lib/theme";
 import { tileSource } from "@/lib/map-tiles";
 import { prefersReducedMotion } from "@/lib/motion";
 import { mmiColor } from "@/lib/mmi-colors";
+import { attachProvinceLayers, attachSingleProvince, markView, nationalBounds } from "@/lib/province-layer";
+import { tokenColor } from "@/lib/token-color";
 import type { ReplayState } from "@/lib/replay";
 import type { FeltLocationPoint } from "@/lib/use-felt-locations";
 import type { UserLocation } from "@/lib/use-geolocation";
 import "leaflet/dist/leaflet.css";
 
 const CARTO_API_KEY = process.env.NEXT_PUBLIC_CARTO_API_KEY;
-const JAVA_CENTER: [number, number] = [-7.3, 110.2];
-const JAVA_ZOOM = 6;
-
-/** Canvas layers need a concrete colour, so resolve a design token (light-dark()) on a probe element. */
-function tokenColor(host: HTMLElement, token: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  host.appendChild(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
-}
-
 function radiusFor(magnitude: number): number {
   return Math.min(18, Math.max(4, 3 + magnitude * 2.2));
 }
@@ -54,7 +44,11 @@ interface EarthquakeMapProps {
   feltRadiusKm: number | null;
   /** Event that just arrived live; its marker pulses for a few seconds. */
   pulseKey?: string | null;
+  /** Province page: open on this province's bbox with its detailed outline instead of the national view. */
+  province?: string;
 }
+
+type MapView = "national" | "user" | "event" | "province";
 
 export function EarthquakeMap({
   events,
@@ -68,6 +62,7 @@ export function EarthquakeMap({
   epicenter,
   feltRadiusKm,
   pulseKey = null,
+  province,
 }: EarthquakeMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
@@ -91,6 +86,8 @@ export function EarthquakeMap({
     applySize: (() => void) | null;
   }>({ markers: [], boundary: null, applySize: null });
   const lastFlewRef = useRef<number | null>(null);
+  const viewRef = useRef<MapView>(province ? "province" : "national");
+  const selectionSeenRef = useRef(false);
   const onSelectRef = useRef(onSelect);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,13 +110,26 @@ export function EarthquakeMap({
 
         leafletRef.current = L;
         map = L.map(container, {
-          center: JAVA_CENTER,
-          zoom: JAVA_ZOOM,
           zoomControl: true,
           attributionControl: true,
           preferCanvas: true,
         });
         mapRef.current = map;
+        // National view (D7): the whole archipelago in the fixed-height container, so nothing shifts.
+        const focus = province ? provinceBySlug(province) : null;
+        map.fitBounds(
+          focus
+            ? [
+                [focus.bbox.minLat, focus.bbox.minLon],
+                [focus.bbox.maxLat, focus.bbox.maxLon],
+              ]
+            : nationalBounds(),
+          { animate: false },
+        );
+        map.attributionControl.addAttribution("BMKG");
+        map.attributionControl.addAttribution(GEOBOUNDARIES_ATTRIBUTION);
+        const view = map;
+        map.on("moveend", () => markView(view, container, viewRef.current));
 
         const tiles = tileSource(currentTheme(), CARTO_API_KEY);
         container.dataset.tileFilter = tiles.filter;
@@ -129,7 +139,7 @@ export function EarthquakeMap({
         }).addTo(map);
 
         markersRef.current = L.layerGroup().addTo(map);
-        selectedRef.current = L.circleMarker(JAVA_CENTER, {
+        selectedRef.current = L.circleMarker(map.getCenter(), {
           radius: 18,
           color: "#d9481c",
           weight: 2,
@@ -143,6 +153,7 @@ export function EarthquakeMap({
 
         map.whenReady(() => {
           map?.invalidateSize();
+          if (map) markView(map, container, viewRef.current);
           setReady(true);
         });
       } catch (loadError) {
@@ -194,7 +205,7 @@ export function EarthquakeMap({
       leafletRef.current = null;
       setReady(false);
     };
-  }, []);
+  }, [province]);
 
   useEffect(() => {
     const L = leafletRef.current;
@@ -231,11 +242,16 @@ export function EarthquakeMap({
     }
     ring.setLatLng([selected.latitude, selected.longitude]);
     if (!map.hasLayer(ring)) ring.addTo(map);
+    // The first selection is the automatic one (newest quake after load): keep the opening view.
+    const automatic = !selectionSeenRef.current;
+    selectionSeenRef.current = true;
+    if (automatic || province) return;
+    viewRef.current = "event";
     const target: [number, number] = [selected.latitude, selected.longitude];
     const zoom = Math.max(map.getZoom(), 7);
     if (prefersReducedMotion()) map.setView(target, zoom, { animate: false });
     else map.flyTo(target, zoom, { duration: 0.6 });
-  }, [selectedKey, events, ready]);
+  }, [selectedKey, events, ready, province]);
 
   useEffect(() => {
     if (!ready) return;
@@ -342,15 +358,48 @@ export function EarthquakeMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !ready || !userLocation) return;
+    if (!map || !ready || province) return;
+    if (!userLocation) {
+      // Location cleared: back to the whole archipelago.
+      if (lastFlewRef.current === null) return;
+      lastFlewRef.current = null;
+      viewRef.current = "national";
+      map.fitBounds(nationalBounds(), { animate: !prefersReducedMotion() });
+      return;
+    }
     if (lastFlewRef.current === userLocation.timestamp) return;
     lastFlewRef.current = userLocation.timestamp;
-    map.flyTo(
-      [userLocation.latitude, userLocation.longitude],
-      Math.max(map.getZoom(), 8),
-      { duration: 0.9 },
-    );
-  }, [userLocation, ready]);
+    viewRef.current = "user";
+    const target: [number, number] = [userLocation.latitude, userLocation.longitude];
+    const zoom = Math.max(map.getZoom(), 8);
+    if (prefersReducedMotion()) map.setView(target, zoom, { animate: false });
+    else map.flyTo(target, zoom, { duration: 0.9 });
+  }, [userLocation, ready, province]);
+
+  useEffect(() => {
+    const L = leafletRef.current;
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!L || !map || !container || !ready) return;
+    // Outlines load after the map exists, when the browser is idle (D4): never in first-load JS.
+    let detach: (() => void) | null = null;
+    const attach = () => {
+      detach = province ? attachSingleProvince(L, map, container, province) : attachProvinceLayers(L, map, container);
+    };
+    const win = window as Window;
+    if (typeof win.requestIdleCallback === "function") {
+      const handle = win.requestIdleCallback(attach, { timeout: 2_000 });
+      return () => {
+        win.cancelIdleCallback(handle);
+        detach?.();
+      };
+    }
+    const handle = window.setTimeout(attach, 200);
+    return () => {
+      window.clearTimeout(handle);
+      detach?.();
+    };
+  }, [ready, province]);
 
   useEffect(() => {
     const L = leafletRef.current;

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { measureHomeBundle } from "./check-bundle.mjs";
+import { FAIL_KB, measureHomeBundle } from "./check-bundle.mjs";
 
 function fakeBuild(pageChunk, css = ".x{color:red}") {
   const dir = mkdtempSync(join(tmpdir(), "iq-bundle-"));
@@ -30,6 +30,16 @@ describe("measureHomeBundle", () => {
   it("fails when leaflet code is in the home entry", () => {
     expect(measureHomeBundle(fakeBuild('el.className="leaflet-pane"')).forbidden).toEqual([
       "leaflet in static/chunks/page.js",
+    ]);
+  });
+
+  it("fails above 168.5 kB gzip (R137 AC 29)", () => {
+    expect(FAIL_KB).toBe(168.5);
+  });
+
+  it("fails when province geometry is in the home entry", () => {
+    expect(measureHomeBundle(fakeBuild('const rings=[[[140.7181,-2.5337],[140.72,-2.54]]]')).forbidden).toEqual([
+      "geometry in static/chunks/page.js",
     ]);
   });
 

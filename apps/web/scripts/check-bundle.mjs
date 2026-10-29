@@ -7,12 +7,15 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 
-export const BUDGET_KB = 180;
-export const FAIL_KB = 200;
+// R137 AC 29: the national map must not grow the home entry (163.6 kB at the P0 merge).
+export const BUDGET_KB = 168.5;
+export const FAIL_KB = 168.5;
 
 const FORBIDDEN = [
   { name: "leaflet", pattern: /leaflet-pane|L\.Map\b|Leaflet \d/ },
   { name: "echarts", pattern: /zrender|echarts\/lib|ECharts/ },
+  // Province or coastline geometry (D4): lazy /geo files only, never bundled.
+  { name: "geometry", pattern: /\[\[\[-?\d{1,3}\.\d{3,},-?\d{1,3}\.\d{3,}\]/ },
 ];
 const FORBIDDEN_CSS = { name: "leaflet.css", pattern: /\.leaflet-pane/ };
 

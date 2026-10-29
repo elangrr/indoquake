@@ -76,19 +76,6 @@ export function useGeolocation() {
   const storedLocation = useMemo(() => parseLocation(storedRaw), [storedRaw]);
   const location = liveLocation ?? storedLocation;
 
-  useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.permissions?.query) {
-      return;
-    }
-    navigator.permissions
-      .query({ name: "geolocation" })
-      .then((result) => {
-        if (result.state === "denied") {
-          setStatus((current) => (current === "granted" ? current : "denied"));
-        }
-      })
-      .catch(() => undefined);
-  }, []);
 
   const request = useCallback(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -130,6 +117,22 @@ export function useGeolocation() {
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
     );
   }, []);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) {
+      return;
+    }
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((result) => {
+        // D7: only an already granted permission locates on load; "prompt" never asks unprompted.
+        if (result.state === "granted") request();
+        else if (result.state === "denied") {
+          setStatus((current) => (current === "granted" ? current : "denied"));
+        }
+      })
+      .catch(() => undefined);
+  }, [request]);
 
   const clear = useCallback(() => {
     setLiveLocation(null);

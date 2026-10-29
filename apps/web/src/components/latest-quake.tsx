@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { EarthquakeEvent } from "@indoquake/shared";
 import { eventAreaLabel, formatEventTime } from "@/lib/event-time";
@@ -6,16 +7,19 @@ import { Seismogram } from "./seismogram";
 
 /**
  * The newest quake as plain text: it is the first thing read and the LCP element, never the map.
- * `loading` (the list still comes from the API) holds the filled height, so the map below does not move.
+ * Loading, empty and error states all sit on the skeleton's box, which holds the filled height, so
+ * the map below never moves when the API answers late, empty or with an error (D27).
  */
 export function LatestQuake({
   event,
   events,
   loading = false,
+  error = null,
 }: {
   event: EarthquakeEvent | null;
   events: EarthquakeEvent[];
   loading?: boolean;
+  error?: ReactNode;
 }) {
   return (
     <section aria-labelledby="gempa-terkini" className="px-4 pt-6 pb-4">
@@ -50,10 +54,15 @@ export function LatestQuake({
           </Link>
           <Seismogram events={events} />
         </div>
-      ) : loading ? (
-        <LatestQuakeSkeleton />
       ) : (
-        <p className="mt-2 min-h-40 text-xl text-muted">Belum ada gempa tercatat.</p>
+        <div className="relative">
+          <LatestQuakeSkeleton hidden={!loading || Boolean(error)} />
+          {error ? (
+            <div className="absolute inset-x-0 top-2">{error}</div>
+          ) : (
+            !loading && <p className="absolute inset-x-0 top-2 text-xl text-muted">Belum ada gempa tercatat.</p>
+          )}
+        </div>
       )}
     </section>
   );
@@ -68,9 +77,13 @@ function Bar({ className = "", width }: { className?: string; width: string }) {
   );
 }
 
-function LatestQuakeSkeleton() {
+function LatestQuakeSkeleton({ hidden }: { hidden: boolean }) {
   return (
-    <div className="mt-2" aria-hidden="true" data-testid="latest-quake-loading">
+    <div
+      className={`mt-2 ${hidden ? "invisible" : ""}`}
+      aria-hidden="true"
+      data-testid={hidden ? undefined : "latest-quake-loading"}
+    >
       <Bar className="text-4xl" width="w-24" />
       <span className="mt-2 block text-xl leading-snug">
         <Bar width="w-full" />
@@ -80,6 +93,7 @@ function LatestQuakeSkeleton() {
         <Bar width="w-1/2" />
         <Bar width="w-1/3" />
         <Bar width="w-2/3" />
+        <Bar width="w-1/2" />
       </span>
       <span className="mt-3 block min-h-11" />
       <span className="mt-6 block h-14 rounded-sm bg-surface-2" />
