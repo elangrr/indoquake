@@ -8,6 +8,7 @@
 - apps/web/src/components/dashboard.tsx: home state (merge, pulse, toasts, announcer), lazy map (earthquake-map.tsx).
 - apps/web/src/components/data-status.tsx, data-banner.tsx: header status and the down banner (lib/data-status.ts).
 - apps/web/src/lib/map-tiles.ts: basemap per theme (Carto with NEXT_PUBLIC_CARTO_API_KEY, else OSM + tile-pane filter).
+- apps/web/src/lib/map-poster.ts + components/map-poster.tsx: home map poster (LCP), the national view's tiles as CSS backgrounds before Leaflet loads; container queries pick Leaflet's zoom and the tiles in view (e2e E18 compares with real Leaflet).
 - apps/web/src/lib/sentence-case.ts: sentence case for upstream labels (tsunami status).
 - apps/web/src/lib/merge-event.ts: field-wise merge of stream frames into the list.
 - apps/web/src/lib/history-query.ts: /riwayat URL params to API params (province, area); WIB day bounds come from @indoquake/regions/meta.
