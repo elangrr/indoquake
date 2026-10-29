@@ -214,13 +214,59 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Keyless OSM tiles: tint the tile pane only, never markers or overlays. */
-.leaflet-container[data-tile-filter="light"] .leaflet-tile-pane {
-  filter: saturate(0.35) contrast(0.95);
+/* Keyless OSM tiles: tint the tile pane only, never markers or overlays. The map poster gets the same tint. */
+:root {
+  --osm-tint-light: saturate(0.35) contrast(0.95);
+  --osm-tint-dark: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.9) contrast(0.9);
 }
 
-.leaflet-container[data-tile-filter="dark"] .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) saturate(0.35) brightness(0.9) contrast(0.9);
+.leaflet-container[data-tile-filter="light"] .leaflet-tile-pane,
+.map-poster[data-tint="osm"] {
+  filter: var(--osm-tint-light);
+}
+
+.leaflet-container[data-tile-filter="dark"] .leaflet-tile-pane,
+:root[data-theme="dark"] .map-poster[data-tint="osm"] {
+  filter: var(--osm-tint-dark);
+}
+
+/*
+ * National map poster (components/map-poster.tsx): basemap tiles painted before Leaflet loads. Zoom groups, rows
+ * and tiles are hidden here; the container queries from lib/map-poster.ts show the ones Leaflet would load.
+ */
+.map-poster {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  container-type: size;
+}
+
+.map-poster div {
+  display: none;
+  position: absolute;
+  inset: 0;
+}
+
+.map-poster i {
+  display: none;
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  background-image: var(--tile-light);
+}
+
+:root[data-theme="dark"] .map-poster i {
+  background-image: var(--tile-dark, var(--tile-light));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .map-poster[data-tint="osm"] {
+    filter: var(--osm-tint-dark);
+  }
+
+  :root:not([data-theme="light"]) .map-poster i {
+    background-image: var(--tile-dark, var(--tile-light));
+  }
 }
 
 .leaflet-tooltip.indoquake-tooltip {

@@ -34,7 +34,7 @@ import { useServerTime } from "@/lib/use-server-time";
 
 const EarthquakeMap = dynamic(
   () => import("./earthquake-map").then((module) => module.EarthquakeMap),
-  { ssr: false, loading: () => <MapPlaceholder /> },
+  { ssr: false, loading: () => <MapPlaceholder poster /> },
 );
 
 const TOAST_DURATION_MS = 12_000;
@@ -359,7 +359,7 @@ export function Dashboard({
         role="region"
         className="relative h-[60vh] min-h-80 border-t border-border lg:sticky lg:top-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(100dvh-3.5rem)] lg:self-start lg:border-t-0"
       >
-        {mapAllowed ? <EarthquakeMap {...mapProps} /> : <MapPlaceholder />}
+        {mapAllowed ? <EarthquakeMap {...mapProps} /> : <MapPlaceholder poster />}
       </div>
       <div className="min-w-0 lg:col-start-1 lg:row-start-2 lg:border-r lg:border-border">
         <FeedPanel
