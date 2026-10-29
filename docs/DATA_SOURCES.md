@@ -39,7 +39,24 @@ per IP.
 | --- | --- |
 | Batas administrasi provinsi Jawa (dataset lokal, packages/regions) | Kolom `province_slug` saat ingest |
 | Garis pantai (Natural Earth 10m, dataset lokal) | Estimasi jarak ke pantai |
-| Basemap CARTO | Ubin peta di browser |
+| Ubin peta OpenStreetMap (CARTO hanya dengan kunci) | Peta dasar di browser, lihat di bawah |
+
+## Ubin peta
+
+- Bawaan: ubin standar OpenStreetMap dari `tile.openstreetmap.org`. Atribusi "© OpenStreetMap contributors" selalu
+  tampil di pojok kanan bawah peta (kontrol atribusi Leaflet) dan menaut ke https://www.openstreetmap.org/copyright.
+- Alasan: Kebijakan Penggunaan Ubin OSMF (https://operations.osmfoundation.org/policies/tiles/) mengizinkan situs web
+  memakai ubin ini tanpa kunci selama atribusi terlihat, browser mengirim Referer yang sah, tidak ada unduhan massal
+  atau prefetch, dan cache HTTP dihormati. Indoquake memenuhi itu: ubin hanya diminta oleh browser pengguna untuk
+  bagian peta yang dilihat, server tidak pernah mengambil ubin, dan `Referrer-Policy: strict-origin-when-cross-origin`
+  (next.config.ts) tetap mengirim origin situs. Data peta OSM berlisensi ODbL.
+- Batas: kebijakan yang sama melarang pemakaian berat, dan OSMF boleh memblokir tanpa pemberitahuan. Bila lalu lintas
+  besar (misalnya setelah gempa kuat), isi `NEXT_PUBLIC_CARTO_API_KEY` saat build atau pakai server ubin sendiri.
+- CARTO hanya dipakai bila `NEXT_PUBLIC_CARTO_API_KEY` diisi saat build; tanpa kunci CARTO hanya menampilkan ubin
+  "API key required". Dengan kunci, atribusinya "© OpenStreetMap contributors © CARTO".
+- Pilihan lain yang ditimbang: OpenFreeMap (tanpa kunci, tetapi hanya ubin vektor sehingga butuh MapLibre GL dan
+  bundel jauh lebih besar), Stadia Maps (butuh akun dan kunci untuk domain publik), ubin HOT dari OSM France
+  (kapasitas donasi lebih kecil dengan kebijakan serupa).
 
 ## Aturan penyajian
 
