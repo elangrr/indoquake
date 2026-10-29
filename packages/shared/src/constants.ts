@@ -38,6 +38,8 @@ export const SSE_MAX_STREAMS_PER_IP = 5;
 export const BMKG_ATTRIBUTION =
   "Sumber data: BMKG (Badan Meteorologi, Klimatologi, dan Geofisika)";
 
+export const GEOBOUNDARIES_ATTRIBUTION = "Batas provinsi: geoBoundaries (CC BY 4.0)";
+
 export const SAFETY_DISCLAIMER =
   "Situs ini menyajikan estimasi informasi dan bukan pengganti informasi darurat resmi. " +
   "Untuk peringatan resmi gempa dan tsunami, ikuti BMKG dan pihak berwenang setempat.";

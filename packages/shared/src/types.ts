@@ -1,5 +1,11 @@
 export type FeedName = "autogempa" | "gempaterkini" | "gempadirasakan";
 
+/** Time zone of an event or place: WIB UTC+7, WITA UTC+8, WIT UTC+9 (fixed offsets, no DST). */
+export type ZoneId = "WIB" | "WITA" | "WIT";
+
+/** land = inside (or snapped to) a province; sea = Laut/Perairan with the nearest province. */
+export type AreaKind = "land" | "sea";
+
 export interface FeltReport {
   mmi: string;
   place: string;
@@ -20,8 +26,13 @@ export interface EarthquakeEvent {
   feltReports?: FeltReport[];
   shakemapUrl: string | null;
   source: string;
-  provinceSlug?: string | null;
+  provinceSlug?: string | null; // containing province (land only); null for sea
   provinceName?: string | null;
+  areaKind?: AreaKind | null; // null = legacy row not yet re-assigned
+  nearestProvinceSlug?: string | null; // sea only
+  nearestProvinceName?: string | null; // sea only
+  nearestProvinceKm?: number | null; // sea only, integer km
+  zone?: ZoneId; // the API always sends it; older stream payloads may lack it
   firstSeenAt?: string;
   lastUpdatedAt?: string;
 }
@@ -97,6 +108,20 @@ export interface EarthquakeListResponse {
     page?: number;
     total?: number;
     totalPages?: number;
+  };
+}
+
+export interface AreaResponse {
+  data: {
+    latitude: number;
+    longitude: number;
+    kind: AreaKind;
+    provinceSlug: string | null;
+    provinceName: string | null;
+    nearestProvinceSlug: string | null;
+    nearestProvinceName: string | null;
+    nearestProvinceKm: number | null;
+    zone: ZoneId;
   };
 }
 

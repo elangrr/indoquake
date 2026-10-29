@@ -1,0 +1,271 @@
+{
+  "note": "Authoritative 38-province table (SPEC R137 section 5). Order = display and tie-break order. iso = ISO 3166-2, used by the generator to match geoBoundaries ADM1 shapeISO.",
+  "provinces": [
+    {
+      "slug": "aceh",
+      "name": "Aceh",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-AC"
+    },
+    {
+      "slug": "sumatera-utara",
+      "name": "Sumatera Utara",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-SU"
+    },
+    {
+      "slug": "sumatera-barat",
+      "name": "Sumatera Barat",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-SB"
+    },
+    {
+      "slug": "riau",
+      "name": "Riau",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-RI"
+    },
+    {
+      "slug": "kepulauan-riau",
+      "name": "Kepulauan Riau",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-KR"
+    },
+    {
+      "slug": "jambi",
+      "name": "Jambi",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-JA"
+    },
+    {
+      "slug": "sumatera-selatan",
+      "name": "Sumatera Selatan",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-SS"
+    },
+    {
+      "slug": "kepulauan-bangka-belitung",
+      "name": "Kepulauan Bangka Belitung",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-BB"
+    },
+    {
+      "slug": "bengkulu",
+      "name": "Bengkulu",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-BE"
+    },
+    {
+      "slug": "lampung",
+      "name": "Lampung",
+      "group": "Sumatera",
+      "zone": "WIB",
+      "iso": "ID-LA"
+    },
+    {
+      "slug": "banten",
+      "name": "Banten",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-BT"
+    },
+    {
+      "slug": "dki-jakarta",
+      "name": "DKI Jakarta",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-JK"
+    },
+    {
+      "slug": "jawa-barat",
+      "name": "Jawa Barat",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-JB"
+    },
+    {
+      "slug": "jawa-tengah",
+      "name": "Jawa Tengah",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-JT"
+    },
+    {
+      "slug": "di-yogyakarta",
+      "name": "DI Yogyakarta",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-YO"
+    },
+    {
+      "slug": "jawa-timur",
+      "name": "Jawa Timur",
+      "group": "Jawa",
+      "zone": "WIB",
+      "iso": "ID-JI"
+    },
+    {
+      "slug": "bali",
+      "name": "Bali",
+      "group": "Bali dan Nusa Tenggara",
+      "zone": "WITA",
+      "iso": "ID-BA"
+    },
+    {
+      "slug": "nusa-tenggara-barat",
+      "name": "Nusa Tenggara Barat",
+      "group": "Bali dan Nusa Tenggara",
+      "zone": "WITA",
+      "iso": "ID-NB"
+    },
+    {
+      "slug": "nusa-tenggara-timur",
+      "name": "Nusa Tenggara Timur",
+      "group": "Bali dan Nusa Tenggara",
+      "zone": "WITA",
+      "iso": "ID-NT"
+    },
+    {
+      "slug": "kalimantan-barat",
+      "name": "Kalimantan Barat",
+      "group": "Kalimantan",
+      "zone": "WIB",
+      "iso": "ID-KB"
+    },
+    {
+      "slug": "kalimantan-tengah",
+      "name": "Kalimantan Tengah",
+      "group": "Kalimantan",
+      "zone": "WIB",
+      "iso": "ID-KT"
+    },
+    {
+      "slug": "kalimantan-selatan",
+      "name": "Kalimantan Selatan",
+      "group": "Kalimantan",
+      "zone": "WITA",
+      "iso": "ID-KS"
+    },
+    {
+      "slug": "kalimantan-timur",
+      "name": "Kalimantan Timur",
+      "group": "Kalimantan",
+      "zone": "WITA",
+      "iso": "ID-KI"
+    },
+    {
+      "slug": "kalimantan-utara",
+      "name": "Kalimantan Utara",
+      "group": "Kalimantan",
+      "zone": "WITA",
+      "iso": "ID-KU"
+    },
+    {
+      "slug": "sulawesi-utara",
+      "name": "Sulawesi Utara",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-SA"
+    },
+    {
+      "slug": "gorontalo",
+      "name": "Gorontalo",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-GO"
+    },
+    {
+      "slug": "sulawesi-tengah",
+      "name": "Sulawesi Tengah",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-ST"
+    },
+    {
+      "slug": "sulawesi-barat",
+      "name": "Sulawesi Barat",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-SR"
+    },
+    {
+      "slug": "sulawesi-selatan",
+      "name": "Sulawesi Selatan",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-SN"
+    },
+    {
+      "slug": "sulawesi-tenggara",
+      "name": "Sulawesi Tenggara",
+      "group": "Sulawesi",
+      "zone": "WITA",
+      "iso": "ID-SG"
+    },
+    {
+      "slug": "maluku",
+      "name": "Maluku",
+      "group": "Maluku",
+      "zone": "WIT",
+      "iso": "ID-MA"
+    },
+    {
+      "slug": "maluku-utara",
+      "name": "Maluku Utara",
+      "group": "Maluku",
+      "zone": "WIT",
+      "iso": "ID-MU"
+    },
+    {
+      "slug": "papua",
+      "name": "Papua",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PA"
+    },
+    {
+      "slug": "papua-barat",
+      "name": "Papua Barat",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PB"
+    },
+    {
+      "slug": "papua-selatan",
+      "name": "Papua Selatan",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PS"
+    },
+    {
+      "slug": "papua-tengah",
+      "name": "Papua Tengah",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PT"
+    },
+    {
+      "slug": "papua-pegunungan",
+      "name": "Papua Pegunungan",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PE"
+    },
+    {
+      "slug": "papua-barat-daya",
+      "name": "Papua Barat Daya",
+      "group": "Papua",
+      "zone": "WIT",
+      "iso": "ID-PD"
+    }
+  ]
+}
