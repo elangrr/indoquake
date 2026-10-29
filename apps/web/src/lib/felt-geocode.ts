@@ -73,7 +73,7 @@ async function writeCache(key: string, value: Point | null): Promise<void> {
       await redis.set(key, NEGATIVE_VALUE, "EX", MISS_TTL_SECONDS);
     }
   } catch {
-    // cache tidak tersedia — abaikan
+    // cache tidak tersedia: abaikan
   }
 }
 
