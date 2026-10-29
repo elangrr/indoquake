@@ -39,6 +39,7 @@ if [ "$RUN_UNIT" = "1" ]; then
     *) echo "GATE FAIL install"; exit 1 ;;
   esac
   step contract node scripts/check-contract.mjs
+  step geo-budget node scripts/check-geo-budget.mjs
   step typecheck npm run typecheck
   step lint npm run lint
   step test npm test

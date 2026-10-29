@@ -1,0 +1,102 @@
+{
+  "note": "Config for scripts/build-provinces.mjs. Papua rows: regency -> 2022 province, each checked against the cited government source (DECISIONS D21). Names must match exactly one geoBoundaries ADM2 shapeName.",
+  "source": {
+    "release": "geoBoundaries gbOpen IDN, commit 9469f09592ced973a3448cf66b6100b741b64c0d",
+    "baseUrl": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/IDN",
+    "adm1": "ADM1/geoBoundaries-IDN-ADM1_simplified.geojson",
+    "adm2": "ADM2/geoBoundaries-IDN-ADM2_simplified.geojson"
+  },
+  "attribution": "geoBoundaries (CC BY 4.0)",
+  "adm1Replaced": ["ID-PA", "ID-PB"],
+  "papua": [
+    {
+      "slug": "papua-selatan",
+      "law": "UU 14/2022",
+      "sources": [
+        "https://jdih.kemenkoinfra.go.id/uu-142022-pembentukan-provinsi-papua-selatan",
+        "https://peraturan.bpk.go.id/Details/217796/uu-no-14-tahun-2022"
+      ],
+      "regencies": ["Merauke", "Boven Digoel", "Mappi", "Asmat"]
+    },
+    {
+      "slug": "papua-tengah",
+      "law": "UU 15/2022",
+      "sources": [
+        "https://jdih.kemenkoinfra.go.id/uu-152022-pembentukan-provinsi-papua-tengah",
+        "https://peraturan.bpk.go.id/Details/217798/uu-no-15-tahun-2022"
+      ],
+      "regencies": ["Nabire", "Paniai", "Mimika", "Puncak Jaya", "Puncak", "Dogiyai", "Intan Jaya", "Deiyai"]
+    },
+    {
+      "slug": "papua-pegunungan",
+      "law": "UU 16/2022",
+      "sources": [
+        "https://peraturan.bpk.go.id/Details/217799/uu-no-16-tahun-2022",
+        "https://jdih.papua.go.id/common/dokumen/uunomor16tahun2022-.pdf"
+      ],
+      "regencies": ["Jayawijaya", "Pegunungan Bintang", "Yahukimo", "Tolikara", "Mamberamo Tengah", "Yalimo", "Lanny Jaya", "Nduga"]
+    },
+    {
+      "slug": "papua-barat-daya",
+      "law": "UU 29/2022",
+      "sources": [
+        "https://jdih.kemenkoinfra.go.id/uu-292022-pembentukan-provinsi-papua-barat-daya",
+        "https://peraturan.bpk.go.id/Details/232726/uu-no-29-tahun-2022"
+      ],
+      "regencies": ["Kota Sorong", "Sorong", "Sorong Selatan", "Raja Ampat", "Tambrauw", "Maybrat"]
+    },
+    {
+      "slug": "papua",
+      "law": "remainder after UU 14, 15, 16/2022",
+      "sources": ["https://bapperida.papua.go.id/file/RKPD%20Tahun%202024.pdf"],
+      "regencies": ["Kota Jayapura", "Jayapura", "Keerom", "Sarmi", "Mamberamo Raya", "Waropen", "Biak Numfor", "Supiori", "Kepulauan Yapen"]
+    },
+    {
+      "slug": "papua-barat",
+      "law": "remainder after UU 29/2022",
+      "sources": [
+        "https://papuabaratprov.go.id/home/pages?slug=kl0a_AAZBwR7BgNYu8I-igfMVfjfVH8L",
+        "https://papuabarat.bpk.go.id/wilayah-pemeriksaan/provinsi-papua-barat/"
+      ],
+      "regencies": ["Manokwari", "Manokwari Selatan", "Pegunungan Arfak", "Teluk Bintuni", "Teluk Wondama", "Fakfak", "Kaimana"]
+    }
+  ],
+  "cityPoints": {
+    "aceh": [5.5483, 95.3238],
+    "sumatera-utara": [3.5952, 98.6722],
+    "sumatera-barat": [-0.9471, 100.4172],
+    "sumatera-selatan": [-2.9761, 104.7754],
+    "lampung": [-5.4292, 105.261],
+    "banten": [-6.1104, 106.1503],
+    "dki-jakarta": [-6.1862, 106.834],
+    "jawa-barat": [-6.9175, 107.6191],
+    "jawa-tengah": [-6.9667, 110.4167],
+    "di-yogyakarta": [-7.7956, 110.3695],
+    "jawa-timur": [-7.2575, 112.7521],
+    "bali": [-8.6705, 115.2126],
+    "nusa-tenggara-barat": [-8.5833, 116.1167],
+    "nusa-tenggara-timur": [-10.1772, 123.607],
+    "kalimantan-barat": [-0.0263, 109.3425],
+    "kalimantan-tengah": [-2.2161, 113.9135],
+    "kalimantan-selatan": [-3.3194, 114.5908],
+    "kalimantan-timur": [-0.5022, 117.1536],
+    "sulawesi-utara": [1.4748, 124.8421],
+    "sulawesi-tengah": [-0.8917, 119.8707],
+    "sulawesi-selatan": [-5.1477, 119.4327],
+    "sulawesi-tenggara": [-3.9985, 122.5129],
+    "maluku": [-3.6954, 128.1814],
+    "maluku-utara": [0.7898, 127.3764],
+    "papua": [-2.5337, 140.7181],
+    "papua-barat": [-0.8615, 134.062],
+    "papua-selatan": [-8.4932, 140.4018],
+    "papua-tengah": [-4.5469, 136.8837],
+    "papua-pegunungan": [-4.0956, 138.9459],
+    "papua-barat-daya": [-0.8762, 131.2558]
+  },
+  "simplify": {
+    "lookup": { "intervalM": 200, "decimals": 4 },
+    "display": { "intervalM": 2000, "decimals": 3 },
+    "detail": { "intervalM": 300, "decimals": 4 }
+  },
+  "checks": { "papuaAreaTolerance": 0.02, "papuaOverlapMax": 0.001, "maxDisplacementKm": 1 }
+}

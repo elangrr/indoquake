@@ -2,6 +2,7 @@
 // Never import provinces-lookup.json or @indoquake/geo polygon code here (AC 8): web client code uses this entry.
 import type { AreaKind, ZoneId } from "@indoquake/shared";
 import tableFile from "./data/provinces-table.json";
+import metaFile from "./data/provinces-meta.json";
 import { isZoneId } from "./zones";
 
 export * from "./zones";
@@ -29,8 +30,12 @@ interface TableFile {
   provinces: { slug: string; name: string; group: string; zone: string; iso: string }[];
 }
 
+interface MetaFile {
+  provinces: Record<string, { center: ProvinceMeta["center"]; bbox: ProvinceBbox }>;
+}
 
 const TABLE = (tableFile as TableFile).provinces;
+const GEOMETRY = (metaFile as MetaFile).provinces;
 
 /** The 38 provinces in table order (SPEC section 5). */
 export const PROVINCE_TABLE: readonly ProvinceOption[] = TABLE.map((row) => {
@@ -56,10 +61,12 @@ export const PROVINCE_GROUPS: readonly ProvinceGroup[] = PROVINCE_TABLE.reduce<P
   return groups;
 }, []);
 
-const BY_SLUG = new Map<string, ProvinceOption>(PROVINCE_TABLE.map((row) => [row.slug, row]));
+const BY_SLUG = new Map<string, ProvinceMeta>(
+  PROVINCE_TABLE.map((row) => [row.slug, { ...row, center: GEOMETRY[row.slug].center, bbox: GEOMETRY[row.slug].bbox }]),
+);
 
 /** Province name, group, zone, center and bbox (no rings), or null for an unknown slug. */
-export function provinceBySlug(slug: string): ProvinceOption | null {
+export function provinceBySlug(slug: string): ProvinceMeta | null {
   return BY_SLUG.get(slug) ?? null;
 }
 
