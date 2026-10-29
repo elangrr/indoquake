@@ -1,9 +1,9 @@
 // e2e:serve (B-24): PostGIS + Redis via Testcontainers, repo migrations, >= 100 seeded quakes,
-// `next start` on 127.0.0.1:<port>; prints READY <url> and stays up until SIGTERM.
+// `next start` on 127.0.0.1:<port>; prints READY <url> and stays up until SIGTERM or SIGINT.
+// Stopping (signal, server exit or a startup failure) stops the web server and the containers.
 // Usage: npm run e2e:serve -w @indoquake/e2e -- --port 3418
-import { spawn } from "node:child_process";
-
 import { dockerAvailable, migrate, REPO_ROOT, seed, startStack } from "./stack.mjs";
+import { startWebServer } from "./web-server.mjs";
 
 const portFlag = process.argv.indexOf("--port");
 const port = Number(portFlag > -1 ? process.argv[portFlag + 1] : 3418);
@@ -14,31 +14,33 @@ if (!(await dockerAvailable())) {
 }
 
 const stack = await startStack();
-await migrate(stack.databaseUrl);
-const keys = await seed(stack.databaseUrl, 120);
-const web = spawn("npm", ["run", "start", "-w", "@indoquake/web", "--", "-H", "127.0.0.1", "-p", String(port)], {
-  cwd: REPO_ROOT,
-  env: { ...process.env, DATABASE_URL: stack.databaseUrl, REDIS_URL: stack.redisUrl, NEXT_TELEMETRY_DISABLED: "1" },
-  stdio: ["ignore", "inherit", "inherit"],
-});
-
-const url = `http://127.0.0.1:${port}`;
-for (let attempt = 0; attempt < 120; attempt += 1) {
-  const ok = await fetch(`${url}/robots.txt`).then((response) => response.ok, () => false);
-  if (ok) break;
-  await new Promise((resolve) => setTimeout(resolve, 500));
-}
-console.log(`SEEDED ${keys.length} first=${keys[0]}`);
-console.log(`READY ${url}`);
-
+let web = null;
 let stopping = false;
-async function stop() {
+async function stop(code) {
   if (stopping) return;
   stopping = true;
-  web.kill("SIGTERM");
+  await web?.stop();
   await stack.stop();
-  process.exit(0);
+  process.exit(code);
 }
-process.on("SIGTERM", stop);
-process.on("SIGINT", stop);
-web.on("exit", stop);
+process.on("SIGTERM", () => void stop(0));
+process.on("SIGINT", () => void stop(0));
+
+try {
+  await migrate(stack.databaseUrl);
+  const keys = await seed(stack.databaseUrl, 120);
+  web = await startWebServer({
+    command: "npm",
+    args: ["run", "start", "-w", "@indoquake/web", "--", "-H", "127.0.0.1", "-p", String(port)],
+    port,
+    cwd: REPO_ROOT,
+    env: { ...process.env, DATABASE_URL: stack.databaseUrl, REDIS_URL: stack.redisUrl, NEXT_TELEMETRY_DISABLED: "1" },
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+  console.log(`SEEDED ${keys.length} first=${keys[0]}`);
+  console.log(`READY ${web.url}`);
+  void web.exited.then(() => stop(1));
+} catch (error) {
+  console.error(error);
+  await stop(1);
+}

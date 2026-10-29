@@ -13,5 +13,6 @@
 - apps/web/src/lib/history-query.ts: /riwayat URL params to API params; lib/wib.ts: WIB formatting and day bounds.
 - apps/web/src/lib/use-api.ts: keyed GET hook with loading, error, retry.
 - apps/web/scripts/check-bundle.mjs: home bundle budget; scripts/sync-fonts.mjs: copies fontsource woff2 into src/lib/fonts.
-- apps/e2e/support/: fixtures, API mock and EventSource stub; scripts/stack.mjs: Testcontainers stack, migrate, seed.
+- apps/e2e/support/: fixtures, API mock, EventSource stub, layout-shift recorder; scripts/stack.mjs: Testcontainers stack, migrate, seed.
+- apps/e2e/scripts/web-server.mjs: starts `next start` in its own process group for run-full.mjs and serve.mjs; stops the whole group on every exit path (tests: scripts/web-server.test.mjs).
 - apps/e2e/tests/{mocked,full,shots}/: Playwright projects (mocked runs anywhere, full needs Docker, shots writes docs/screenshots).
