@@ -38,7 +38,26 @@ describe("formatAlertMessage", () => {
   });
 });
 
+describe("formatAlertMessage with zone time and area label (AC 21)", () => {
+  it("prints the area label line and the zoned time instead of the BMKG WIB text", () => {
+    const message = formatAlertMessage({
+      ...event,
+      areaLabel: "Perairan dekat Jawa Tengah",
+      eventTimeText: "Rabu, 16 September 2026 20:11:31 WIB",
+    });
+    expect(message).toContain("M5.7 · 82 km selatan Cilacap\nWilayah: Perairan dekat Jawa Tengah\nKedalaman 31 km · Rabu, 16 September 2026 20:11:31 WIB");
+  });
+
+  it("falls back to the BMKG text without zone fields", () => {
+    expect(formatAlertMessage(event)).toContain("M5.7 · 82 km selatan Cilacap\nKedalaman 31 km · 16 Sep 2026 20:11:31 WIB");
+  });
+});
+
 describe("formatStartMessage", () => {
+  it("names Indonesia (AC 21)", () => {
+    expect(formatStartMessage().split("\n")[0]).toBe("🌏 Indoquake — bot gempa & tsunami Indonesia");
+  });
+
   it("lists the available commands", () => {
     const message = formatStartMessage();
     expect(message).toContain("/terbaru");

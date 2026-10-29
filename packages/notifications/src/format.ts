@@ -12,7 +12,8 @@ export function formatAlertMessage(
     "🌏 Indoquake — gempa baru (data BMKG)",
     "",
     `M${event.magnitude.toFixed(1)} · ${event.regionName}`,
-    `Kedalaman ${event.depthKm} km · ${event.eventTimeWib}`,
+    ...(event.areaLabel ? [`Wilayah: ${event.areaLabel}`] : []),
+    `Kedalaman ${event.depthKm} km · ${event.eventTimeText ?? event.eventTimeWib}`,
   ];
 
   if (options.distanceKm !== undefined && options.distanceKm !== null) {
@@ -42,7 +43,7 @@ export function formatAlertMessage(
 
 export function formatStartMessage(): string {
   return [
-    "🌏 Indoquake — bot gempa & tsunami Jawa",
+    "🌏 Indoquake — bot gempa & tsunami Indonesia",
     "",
     "Perintah:",
     "/terbaru — gempa terakhir",

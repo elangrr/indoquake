@@ -71,6 +71,18 @@ describe("matchesSubscription", () => {
     ).toBe(false);
   });
 
+  it.each([
+    ["land in the province", { provinceSlug: "maluku" }, true],
+    ["land in another province", { provinceSlug: "papua" }, false],
+    ["sea near the province at 120 km", { provinceSlug: null, nearestProvinceSlug: "maluku", nearestProvinceKm: 120 }, true],
+    ["sea near the province at 300 km", { provinceSlug: null, nearestProvinceSlug: "maluku", nearestProvinceKm: 300 }, true],
+    ["sea near the province at 301 km", { provinceSlug: null, nearestProvinceSlug: "maluku", nearestProvinceKm: 301 }, false],
+    ["sea near another province", { provinceSlug: null, nearestProvinceSlug: "papua", nearestProvinceKm: 20 }, false],
+    ["sea without a distance", { provinceSlug: null, nearestProvinceSlug: "maluku", nearestProvinceKm: null }, false],
+  ])("a maluku subscription and %s: %s (AC 21, D28)", (_name, area, expected) => {
+    expect(matchesSubscription(subscription({ provinceSlug: "maluku" }), { ...event, ...area }, null)).toBe(expected);
+  });
+
   it("filters felt-only and tsunami-only", () => {
     expect(
       matchesSubscription(subscription({ feltOnly: true }), event, null),

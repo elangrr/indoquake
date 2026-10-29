@@ -25,6 +25,16 @@ describe("fetchBmkgFeed", () => {
     });
   });
 
+  it.each(["autogempa", "gempaterkini", "gempadirasakan"] as const)(
+    "%s: sends the Indonesia user-agent to the unchanged feed URL (AC 22)",
+    async (feed) => {
+      const seen: { url?: string; headers?: Record<string, string> } = {};
+      await fetchBmkgFeed(feed, { fetchImpl: fakeFetch(new Response(null, { status: 304 }), seen) });
+      expect(seen.url).toBe(`https://data.bmkg.go.id/DataMKG/TEWS/${feed}.json`);
+      expect(seen.headers?.["user-agent"]).toBe("Indoquake/0.2 (monitoring gempa Indonesia; sumber data BMKG)");
+    },
+  );
+
   it("returns not-modified for 304 and the payload plus validators for 200", async () => {
     const notModified = await fetchBmkgFeed("autogempa", { fetchImpl: fakeFetch(new Response(null, { status: 304 })) });
     const ok = await fetchBmkgFeed("autogempa", {

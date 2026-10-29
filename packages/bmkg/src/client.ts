@@ -3,7 +3,7 @@ import type { BmkgFeedName } from "./types";
 export const DEFAULT_BMKG_BASE_URL = "https://data.bmkg.go.id/DataMKG/TEWS";
 export const FETCH_TIMEOUT_MS = 8_000;
 export const RETRY_AFTER_CAP_SECONDS = 300;
-const USER_AGENT = "Indoquake/0.2 (monitoring gempa Jawa; sumber data BMKG)";
+const USER_AGENT = "Indoquake/0.2 (monitoring gempa Indonesia; sumber data BMKG)";
 
 export interface FetchBmkgFeedOptions {
   baseUrl?: string;

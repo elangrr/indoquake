@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Logger } from "pino";
 import { alertSubscriptions, type Database } from "@indoquake/database";
 import { haversineKm } from "@indoquake/geo";
-import { resolveProvince } from "@indoquake/regions";
+import { areaLabel, describeLocation, formatZoned, zoneOfEvent } from "@indoquake/regions";
 import {
   formatAlertMessage,
   matchesSubscription,
@@ -11,8 +11,23 @@ import {
 import { sendChannelMessage } from "@indoquake/notifications/senders";
 import type { EarthquakeEvent } from "@indoquake/shared";
 
+/**
+ * Alert view of a stored event. The area is assigned from the coordinates (assignArea through
+ * describeLocation, as the store does); invalid coordinates fall back to the event's own fields.
+ */
 export function toAlertEvent(event: EarthquakeEvent): AlertEvent {
-  const resolution = resolveProvince(event.latitude, event.longitude);
+  const location = describeLocation(event.latitude, event.longitude);
+  const area = location
+    ? {
+        areaKind: location.kind,
+        provinceSlug: location.provinceSlug,
+        provinceName: location.provinceName,
+        nearestProvinceSlug: location.nearestProvinceSlug,
+        nearestProvinceName: location.nearestProvinceName,
+        nearestProvinceKm: location.nearestProvinceKm,
+        zone: location.zone,
+      }
+    : { ...event, zone: zoneOfEvent(event) };
   return {
     eventKey: event.eventKey,
     magnitude: event.magnitude,
@@ -23,7 +38,13 @@ export function toAlertEvent(event: EarthquakeEvent): AlertEvent {
     eventTimeWib: event.eventTimeWib,
     feltText: event.feltText,
     tsunamiPotential: event.tsunamiPotential,
-    provinceSlug: resolution?.province.slug ?? null,
+    provinceSlug: area.provinceSlug ?? null,
+    eventTimeUtc: event.eventTimeUtc,
+    nearestProvinceSlug: area.nearestProvinceSlug ?? null,
+    nearestProvinceKm: area.nearestProvinceKm ?? null,
+    zone: area.zone,
+    eventTimeText: formatZoned(event.eventTimeUtc, area.zone, "long"),
+    areaLabel: areaLabel(area),
   };
 }
 
