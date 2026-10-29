@@ -1,7 +1,16 @@
 // AC 5-7 and D22: province assignment on the real national lookup data.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { areaLabel, assignArea, describeLocation, resolveProvince, zoneOfEvent, zoneOfProvince } from "@indoquake/regions";
+import {
+  type AreaAssignment,
+  areaLabel,
+  assignArea,
+  describeLocation,
+  provinceBySlug,
+  resolveProvince,
+  zoneOfEvent,
+  zoneOfProvince,
+} from "@indoquake/regions";
 
 describe("assignArea: city centres are land (AC 5)", () => {
   it.each([
@@ -67,11 +76,13 @@ describe("assignArea: coast snap, sea and invalid input (AC 6)", () => {
 
   it("the Indian Ocean south of Java is sea 100-250 km from a central Java province", () => {
     const area = assignArea(-9.5, 110.0);
-    expect(area).toMatchObject({ kind: "sea" });
-    expect(["jawa-tengah", "di-yogyakarta", "jawa-timur"]).toContain(area?.kind === "sea" && area.nearestProvinceSlug);
-    expect(area?.kind === "sea" && area.nearestProvinceKm).toBeGreaterThanOrEqual(100);
-    expect(area?.kind === "sea" && area.nearestProvinceKm).toBeLessThanOrEqual(250);
-    expect(areaLabel({ areaKind: "sea", nearestProvinceName: "DI Yogyakarta", nearestProvinceKm: 162 })).toBe(
+    expect(area?.kind).toBe("sea");
+    const sea = area as Extract<AreaAssignment, { kind: "sea" }>;
+    expect(["jawa-tengah", "di-yogyakarta", "jawa-timur"]).toContain(sea.nearestProvinceSlug);
+    expect(sea.nearestProvinceKm).toBeGreaterThanOrEqual(100);
+    expect(sea.nearestProvinceKm).toBeLessThanOrEqual(250);
+    const nearestProvinceName = provinceBySlug(sea.nearestProvinceSlug)!.name;
+    expect(areaLabel({ areaKind: "sea", nearestProvinceName, nearestProvinceKm: sea.nearestProvinceKm })).toBe(
       "Perairan dekat DI Yogyakarta",
     );
   });
