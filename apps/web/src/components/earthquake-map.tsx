@@ -21,12 +21,15 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { mmiColor } from "@/lib/mmi-colors";
 import { attachProvinceLayers, attachSingleProvince, markView, nationalBounds } from "@/lib/province-layer";
 import { tokenColor } from "@/lib/token-color";
+import { MapPlaceholder } from "./map-placeholder";
 import type { ReplayState } from "@/lib/replay";
 import type { FeltLocationPoint } from "@/lib/use-felt-locations";
 import type { UserLocation } from "@/lib/use-geolocation";
 import "leaflet/dist/leaflet.css";
 
 const CARTO_API_KEY = process.env.NEXT_PUBLIC_CARTO_API_KEY;
+/** Leaflet fades a loaded tile in over 200 ms and prunes 250 ms after the layer's load event. */
+const LEAFLET_TILE_FADE_MS = 250;
 function radiusFor(magnitude: number): number {
   return Math.min(18, Math.max(4, 3 + magnitude * 2.2));
 }
@@ -46,6 +49,8 @@ interface EarthquakeMapProps {
   pulseKey?: string | null;
   /** Province page: open on this province's bbox with its detailed outline instead of the national view. */
   province?: string;
+  /** Home map: keep the national basemap poster over the map until Leaflet has painted its first tiles. */
+  poster?: boolean;
 }
 
 type MapView = "national" | "user" | "event" | "province";
@@ -63,6 +68,7 @@ export function EarthquakeMap({
   feltRadiusKm,
   pulseKey = null,
   province,
+  poster = false,
 }: EarthquakeMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
@@ -91,6 +97,7 @@ export function EarthquakeMap({
   const onSelectRef = useRef(onSelect);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tilesShown, setTilesShown] = useState(false);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -100,6 +107,7 @@ export function EarthquakeMap({
     let cancelled = false;
     let map: LeafletMap | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let tilesShownTimer: number | undefined;
     const shockwave = shockwaveRef.current;
 
     void (async () => {
@@ -140,6 +148,12 @@ export function EarthquakeMap({
           attribution: tiles.attribution,
           maxZoom: 19,
         }).addTo(map);
+        // First tiles in view loaded (failed ones count too). Leaflet then fades each new tile in over 200 ms.
+        tileRef.current.once("load", () => {
+          tilesShownTimer = window.setTimeout(() => {
+            if (!cancelled) setTilesShown(true);
+          }, LEAFLET_TILE_FADE_MS);
+        });
 
         markersRef.current = L.layerGroup().addTo(map);
         selectedRef.current = L.circleMarker(map.getCenter(), {
@@ -168,6 +182,7 @@ export function EarthquakeMap({
 
     return () => {
       cancelled = true;
+      window.clearTimeout(tilesShownTimer);
       resizeObserver?.disconnect();
       resizeObserver = null;
       pulseRef.current?.remove();
@@ -207,6 +222,7 @@ export function EarthquakeMap({
       selectedRef.current = null;
       leafletRef.current = null;
       setReady(false);
+      setTilesShown(false);
     };
   }, [province]);
 
@@ -591,11 +607,18 @@ export function EarthquakeMap({
     map.on("zoomend", applySize);
   }, [epicenter, feltRadiusKm, ready]);
 
+  const showPoster = poster && !tilesShown && !error;
+
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
-      {!ready && !error && (
+      {showPoster && (
+        <div className="pointer-events-none absolute inset-0">
+          <MapPlaceholder poster />
+        </div>
+      )}
+      {!ready && !error && !showPoster && (
         <div className="absolute inset-0 z-[600] flex items-center justify-center text-sm text-muted">
           Memuat peta
         </div>

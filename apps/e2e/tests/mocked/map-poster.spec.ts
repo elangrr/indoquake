@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 import { blockMapTiles, installStreamStub, mockApi } from "../../support/mock";
 
 // perf/lcp-90: before any map JS, the home map region paints the national view's basemap tiles (the LCP on
@@ -70,3 +70,59 @@ for (const { viewport, tiles, centre } of CASES) {
     await withJs.close();
   });
 }
+
+// A 1 x 1 PNG served for every held tile once the test releases them.
+const TILE_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
+
+/** Holds every basemap tile request until release(); later requests are served at once. */
+async function holdMapTiles(page: Page) {
+  const held: Route[] = [];
+  let released = false;
+  const serve = (route: Route) => route.fulfill({ status: 200, contentType: "image/png", body: TILE_PNG });
+  const handler = async (route: Route) => {
+    if (released) await serve(route);
+    else held.push(route);
+  };
+  await page.route("**/tile.openstreetmap.org/**", handler);
+  await page.route("**/basemaps.cartocdn.com/**", handler);
+  return {
+    count: () => held.length,
+    release: async () => {
+      released = true;
+      await Promise.all(held.map(serve));
+    },
+  };
+}
+
+/** Counts animation frames, from the poster's first paint on, in which the map region shows no poster. */
+async function countPosterGaps(page: Page) {
+  await page.addInitScript(() => {
+    const state = { seen: false, gaps: 0 };
+    (window as unknown as { posterGaps: typeof state }).posterGaps = state;
+    const sample = () => {
+      const shown = document.querySelector("[data-testid=map-poster]") !== null;
+      state.seen ||= shown;
+      state.gaps += state.seen && !shown ? 1 : 0;
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  return () => page.evaluate(() => (window as unknown as { posterGaps: { gaps: number } }).posterGaps.gaps);
+}
+
+test("E19 the poster stays over the map until Leaflet's first tiles have loaded, then goes", async ({ page }) => {
+  const tiles = await holdMapTiles(page);
+  const gaps = await countPosterGaps(page);
+  await installStreamStub(page);
+  await mockApi(page);
+  await page.goto("/", { waitUntil: "domcontentloaded" }); // held tiles delay the load event
+  await expect(page.locator(".leaflet-container")).toHaveAttribute("data-view", "national");
+  await expect.poll(tiles.count).toBeGreaterThan(0);
+
+  await expect(page.getByTestId("map-poster")).toBeVisible();
+  expect(await gaps()).toBe(0);
+
+  await tiles.release();
+  await expect(page.getByTestId("map-poster")).toHaveCount(0);
+  await expect(page.locator("img.leaflet-tile").first()).toBeVisible();
+});

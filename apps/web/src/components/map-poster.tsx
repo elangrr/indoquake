@@ -41,7 +41,8 @@ function tileStyle(tile: PosterTile): CSSProperties {
 
 /**
  * The basemap of the national view as plain CSS backgrounds, painted with the first HTML before any map JS
- * (largest contentful paint on phones). Leaflet covers it when it loads and asks for the same tile URLs.
+ * (largest contentful paint on phones). Leaflet asks for the same tile URLs; EarthquakeMap keeps this poster over
+ * the map until Leaflet's first tiles have loaded and faded in, so the basemap never blinks out.
  */
 export function MapPoster() {
   return (
