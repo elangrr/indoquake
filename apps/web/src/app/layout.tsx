@@ -40,7 +40,9 @@ export const metadata: Metadata = {
     description:
       "Gempa bumi dan status tsunami terkini di seluruh Indonesia dari data terbuka BMKG.",
     url: SITE_URL,
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Indoquake, gempa terkini Indonesia" }],
   },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"] },
   icons: { icon: "/icon.svg" },
 };
 

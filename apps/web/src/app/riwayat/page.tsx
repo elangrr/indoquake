@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PROVINCE_OPTIONS } from "@indoquake/regions/meta";
 import { HistoryView } from "@/components/history-view";
 import { PageHeading } from "@/components/page-heading";
 
@@ -16,7 +15,7 @@ export default function RiwayatPage() {
   return (
     <div className="mx-auto w-full max-w-screen-xl">
       <PageHeading title="Riwayat gempa" />
-      <HistoryView provinces={PROVINCE_OPTIONS} />
+      <HistoryView />
     </div>
   );
 }

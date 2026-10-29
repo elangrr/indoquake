@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PROVINCE_OPTIONS, provinceBySlug } from "@indoquake/regions/meta";
 import { PageHeading } from "@/components/page-heading";
-import { ProvinceEvents } from "@/components/province-events";
+import { ProvinceView } from "@/components/province-view";
 
 export function generateStaticParams() {
   return PROVINCE_OPTIONS.map((province) => ({ slug: province.slug }));
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!province) return { title: "Provinsi tidak ditemukan" };
   return {
     title: `Gempa ${province.name}`,
-    description: `Gempa bumi yang tercatat di ${province.name} dari data BMKG.`,
+    description: `Gempa bumi yang tercatat di ${province.name} dan perairan dekatnya dari data BMKG.`,
   };
 }
 
@@ -37,7 +37,7 @@ export default async function ProvincePage({ params }: { params: Promise<{ slug:
         </Link>
       </nav>
       <PageHeading title={`Gempa ${province.name}`} />
-      <ProvinceEvents slug={slug} />
+      <ProvinceView slug={slug} name={province.name} />
     </div>
   );
 }

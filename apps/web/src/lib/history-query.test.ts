@@ -17,6 +17,10 @@ describe("historyApiQuery", () => {
     ["q=Cilacap&page=3", "q=Cilacap&page=3&limit=50"],
     ["q=a", "page=1&limit=50"],
     ["minMag=abc&page=-2&felt=yes", "page=1&limit=50"],
+    ["area=sea", "area=sea&page=1&limit=50"],
+    ["area=land&province=papua", "province=papua&area=land&page=1&limit=50"],
+    ["area=sea&province=papua", "province=papua&page=1&limit=50"],
+    ["area=ocean", "page=1&limit=50"],
   ])("riwayat?%s requests %s", (search, api) => {
     expect(historyApiQuery(parseHistoryFilters(q(search)))).toBe(api);
   });

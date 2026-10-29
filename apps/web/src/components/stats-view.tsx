@@ -57,6 +57,7 @@ function StatsBody({ data }: { data: StatisticsResponse["data"] }) {
     { label: "Terkuat", value: s.strongestMagnitude === null ? "Tidak ada" : `M${s.strongestMagnitude.toFixed(1)}` },
     { label: "Dirasakan", value: s.countFelt.toLocaleString("id-ID") },
     { label: "Berpotensi tsunami", value: s.countTsunami.toLocaleString("id-ID") },
+    { label: "Laut dan perairan", value: (s.countSea ?? 0).toLocaleString("id-ID") },
     { label: "Rata rata kedalaman", value: s.averageDepthKm === null ? "Tidak ada" : `${fmt(s.averageDepthKm)} km` },
     { label: "Rata rata magnitudo", value: fmt(s.averageMagnitude) },
   ];
@@ -65,11 +66,11 @@ function StatsBody({ data }: { data: StatisticsResponse["data"] }) {
   const magnitude = data.magnitudeDistribution.map((item) => ({ label: bucketLabel(item.label), count: item.count }));
   const depth = data.depthDistribution.map((item) => ({ label: `${bucketLabel(item.label)}${/km/.test(item.label) ? "" : " km"}`, count: item.count }));
   const byHour = data.byHour.map((count, hour) => ({ label: `${String(hour).padStart(2, "0")}:00`, count }));
-  const byProvince = data.byProvince.filter((item) => item.count > 0).map((item) => ({ label: item.name, count: item.count }));
+  const byProvince = data.byProvince.map((item) => ({ label: item.name, count: item.count }));
 
   return (
     <>
-      <dl data-testid="stats-summary" className="grid grid-cols-2 border-t border-border sm:grid-cols-3 lg:grid-cols-6">
+      <dl data-testid="stats-summary" className="grid grid-cols-2 border-t border-border sm:grid-cols-4 lg:grid-cols-7">
         {facts.map((fact) => (
           <div key={fact.label} className="border-b border-border px-4 py-4 sm:border-r">
             <dt className="text-xs text-muted">{fact.label}</dt>
@@ -128,8 +129,8 @@ export function StatsView() {
 function StatsSkeleton() {
   return (
     <div aria-hidden="true" data-testid="stats-skeleton">
-      <div className="grid grid-cols-2 border-t border-border sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }, (_, index) => (
+      <div className="grid grid-cols-2 border-t border-border sm:grid-cols-4 lg:grid-cols-7">
+        {Array.from({ length: 7 }, (_, index) => (
           <div key={index} className="h-20 border-b border-border px-4 py-4 sm:border-r">
             <div className="h-3 w-20 rounded-sm bg-surface-2" />
             <div className="mt-3 h-6 w-16 rounded-sm bg-surface-2" />

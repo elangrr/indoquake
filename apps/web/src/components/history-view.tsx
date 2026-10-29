@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import type { EarthquakeListResponse } from "@indoquake/shared";
+import { PROVINCE_GROUPS, provinceBySlug } from "@indoquake/regions/meta";
 import { historyApiQuery, historyPageHref, parseHistoryFilters } from "@/lib/history-query";
 import { useApi } from "@/lib/use-api";
 import { ErrorState } from "./error-state";
@@ -12,7 +13,7 @@ const field =
   "mt-1 block min-h-11 w-full rounded-sm border border-border bg-surface px-3 text-base text-foreground";
 const label = "text-sm text-muted";
 
-export function HistoryView({ provinces }: { provinces: readonly { slug: string; name: string }[] }) {
+export function HistoryView() {
   const params = useSearchParams();
   const filters = parseHistoryFilters(params);
   const result = useApi<EarthquakeListResponse>(`/api/v1/earthquakes?${historyApiQuery(filters)}`);
@@ -52,11 +53,23 @@ export function HistoryView({ provinces }: { provinces: readonly { slug: string;
           Provinsi
           <select name="province" defaultValue={filters.province} className={field}>
             <option value="">Semua provinsi</option>
-            {provinces.map((province) => (
-              <option key={province.slug} value={province.slug}>
-                {province.name}
-              </option>
+            {PROVINCE_GROUPS.map((group) => (
+              <optgroup key={group.name} label={group.name}>
+                {group.slugs.map((slug) => (
+                  <option key={slug} value={slug}>
+                    {provinceBySlug(slug)?.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
+          </select>
+        </label>
+        <label className={`${label} col-span-2`}>
+          Wilayah
+          <select name="area" defaultValue={filters.area} className={field}>
+            <option value="">Semua</option>
+            <option value="land">Darat</option>
+            <option value="sea">Laut dan perairan</option>
           </select>
         </label>
         <div className="col-span-2 flex flex-wrap items-end gap-4">

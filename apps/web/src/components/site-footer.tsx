@@ -1,4 +1,4 @@
-import { BMKG_ATTRIBUTION, SAFETY_DISCLAIMER } from "@indoquake/shared";
+import { BMKG_ATTRIBUTION, GEOBOUNDARIES_ATTRIBUTION, SAFETY_DISCLAIMER } from "@indoquake/shared";
 import { BMKG_DATA_URL } from "@/lib/site";
 
 export function SiteFooter() {
@@ -10,6 +10,7 @@ export function SiteFooter() {
             {BMKG_ATTRIBUTION}
           </a>
         </p>
+        <p data-testid="boundary-attribution">{GEOBOUNDARIES_ATTRIBUTION}</p>
         <p data-testid="safety-disclaimer" className="max-w-prose">
           {SAFETY_DISCLAIMER}
         </p>

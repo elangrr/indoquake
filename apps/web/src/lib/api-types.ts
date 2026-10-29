@@ -16,12 +16,15 @@ export interface StatisticsResponse {
       deepestKm: number | null;
       averageDepthKm: number | null;
       averageMagnitude: number | null;
+      /** R137: sea events (any distance); absent on servers before R137. */
+      countSea?: number;
     };
     magnitudeDistribution: { label: string; count: number }[];
     depthDistribution: { label: string; count: number }[];
     byDay: { date: string; count: number }[];
     byHour: number[];
-    byProvince: { slug: string; name: string; count: number }[];
+    /** R137: always the 38 provinces; count = land events, seaCount = sea events within 300 km. */
+    byProvince: { slug: string; name: string; zone?: string; count: number; seaCount?: number }[];
     byMonth?: { month: string; count: number }[];
   };
   meta?: { generatedAt: string };

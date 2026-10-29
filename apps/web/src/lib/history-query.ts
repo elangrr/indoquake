@@ -10,6 +10,8 @@ export interface HistoryFilters {
   from: string;
   to: string;
   province: string;
+  /** "land" | "sea" | "" (all); R137 "Wilayah" select. */
+  area: string;
   felt: boolean;
   tsunami: boolean;
   page: number;
@@ -31,6 +33,7 @@ export function parseHistoryFilters(params: Readable): HistoryFilters {
     from: text("from"),
     to: text("to"),
     province: text("province"),
+    area: ["land", "sea"].includes(text("area")) ? text("area") : "",
     felt: params.get("felt") === "1",
     tsunami: params.get("tsunami") === "1",
     page: Number.isFinite(page) && page >= 1 ? page : 1,
@@ -56,6 +59,8 @@ export function historyApiQuery(filters: HistoryFilters): string {
   set("from", filters.from ? wibDayStartUtc(filters.from) : null);
   set("to", filters.to ? wibDayEndUtc(filters.to) : null);
   set("province", filters.province || null);
+  // A province holds land events only, so province plus sea would be an empty 400: the province wins.
+  set("area", filters.province && filters.area === "sea" ? null : filters.area || null);
   if (filters.felt) query.set("felt", "true");
   if (filters.tsunami) query.set("tsunami", "true");
   set("q", filters.q.length >= 2 ? filters.q.slice(0, 60) : null);
