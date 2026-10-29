@@ -11,7 +11,7 @@ const ADM1 = "geoBoundaries-IDN-ADM1_simplified.geojson";
 const ADM2 = "geoBoundaries-IDN-ADM2_simplified.geojson";
 
 interface Feature {
-  properties: { shapeName?: string; shapeISO?: string };
+  properties: { shapeName?: string; shapeISO?: string; shapeID?: string };
   geometry: { type: string; coordinates: number[][][] | number[][][][] } | null;
 }
 interface Collection {
@@ -81,6 +81,23 @@ describe("build-provinces on the offline fixture (AC 11)", () => {
         adm2.features.push(structuredClone(named(adm2, "Asmat")));
       },
       'kabupaten/kota "Asmat" (papua-selatan) cocok dengan 2 fitur ADM2, harus 1',
+    ],
+    [
+      "two regencies resolving to one ADM2 feature (41 distinct, not 42)",
+      (_adm1: Collection, adm2: Collection) => {
+        named(adm2, "Asmat").properties.shapeID = named(adm2, "Mappi").properties.shapeID;
+      },
+      "fitur ADM2 berbeda yang dipakai: 41, harus 42",
+    ],
+    [
+      "a Papua province whose regencies have no geometry",
+      (_adm1: Collection, adm2: Collection) => {
+        named(adm2, "Merauke").geometry = null;
+        named(adm2, "Boven Digoel").geometry = null;
+        named(adm2, "Mappi").geometry = null;
+        named(adm2, "Asmat").geometry = null;
+      },
+      "provinsi papua-selatan tidak punya ring yang valid",
     ],
     [
       "a province without a ring",
