@@ -105,6 +105,9 @@ export function EarthquakeMap({
     void (async () => {
       try {
         const L = await import("leaflet");
+        // Build the map in its own task, not in the one that evaluated Leaflet: two short tasks instead of one
+        // long one keep the main thread responsive while the page settles (total blocking time).
+        await new Promise((resolve) => setTimeout(resolve, 0));
         const container = containerRef.current;
         if (cancelled || !container) return;
 
