@@ -79,3 +79,7 @@ Production runs on one host with Docker Compose (web, worker, PostgreSQL with Po
 Situs ini menyajikan estimasi informasi dan bukan pengganti informasi darurat resmi. Untuk peringatan resmi gempa dan tsunami, ikuti BMKG dan pihak berwenang setempat.
 
 (This site presents estimated information and is not a substitute for official emergency information. For official earthquake and tsunami warnings, follow BMKG and local authorities.)
+
+## License
+
+The Indoquake code is released under the MIT License (see `LICENSE`). Earthquake data belongs to BMKG; boundaries and map tiles keep their own licenses (see "Data source and BMKG terms" above).

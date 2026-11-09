@@ -77,3 +77,7 @@ Produksi berjalan di satu host dengan Docker Compose (web, worker, PostgreSQL de
 ## Keselamatan
 
 Situs ini menyajikan estimasi informasi dan bukan pengganti informasi darurat resmi. Untuk peringatan resmi gempa dan tsunami, ikuti BMKG dan pihak berwenang setempat.
+
+## Lisensi
+
+Kode Indoquake dirilis dengan lisensi MIT (lihat `LICENSE`). Data gempa milik BMKG, batas wilayah dan peta mengikuti lisensi masing-masing sumber (lihat bagian sumber data di README.en.md).
